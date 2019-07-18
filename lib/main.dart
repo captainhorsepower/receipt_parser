@@ -63,15 +63,15 @@ class _ReceiptPareserHomePageState extends State<ReceiptPareserHomePage> {
           .map( (block) => block.text )
           .join('\n');
 
-    RegExp exp = new RegExp(r"\d{1,4}\.\d{2}");
+    RegExp exp = new RegExp(r"(\d{1,4},*)+\.\d{2}");
     Iterable<RegExpMatch> matches = exp.allMatches(text);
      
     if (matches == null || matches.isEmpty) {
       return "TOTAL SUM NOT FOUND";
     }
-    
+
     return matches
-        .map( (match) => match.group(0) )
+        .map( (match) => match.group(0).replaceAll(",", "") )
         .map( (str) => double.parse(str) )
         .reduce( (curr, next) => curr > next ? curr : next)
         .toString();
