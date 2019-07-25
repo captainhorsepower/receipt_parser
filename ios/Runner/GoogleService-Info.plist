@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>731292646126-tu0bkffrlvjk49gfcubfphdhij0p6jne.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.731292646126-tu0bkffrlvjk49gfcubfphdhij0p6jne</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDlxnGP9sUGMLCzt1d8tOiZURmhmlB2DZg</string>
+	<key>GCM_SENDER_ID</key>
+	<string>731292646126</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.varabei.artem.receiptParser</string>
+	<key>PROJECT_ID</key>
+	<string>fluttertextrecognition</string>
+	<key>STORAGE_BUCKET</key>
+	<string>fluttertextrecognition.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:731292646126:ios:0c3a45e1e87040a5</string>
+	<key>DATABASE_URL</key>
+	<string>https://fluttertextrecognition.firebaseio.com</string>
+</dict>
+</plist>

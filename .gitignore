@@ -72,8 +72,9 @@
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 
 # Private files 
-ios/Runner/GoogleService-Info.plist
-android/app/google-services.json
+#ios/Runner/GoogleService-Info.plist
+#android/app/google-services.json
+
 .gradle/buildOutputCleanup/cache.properties
 .gradle/4.10.2/gc.properties
 .gradle/4.10.2/fileChanges/last-build.bin
