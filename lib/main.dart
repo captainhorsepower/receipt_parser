@@ -1,113 +1,124 @@
-import 'dart:io';
-
-import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:camera/camera.dart';
+import 'dart:async';
+import 'ocr_engine.dart';
 
-void main() => runApp(MyApp());
+List<CameraDescription> cameras;
 
-class MyApp extends StatelessWidget {
+Future<void> main() async {
+  cameras = await availableCameras();
+  runApp(OcrApp());
+}
+
+class OcrApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      title: "Flutter OCR",
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text("Flutter Text Recognizer"),
+        ),
+        body: CameraPage(),
       ),
-      home: ReceiptPareserHomePage(),
     );
   }
 }
 
-class ReceiptPareserHomePage extends StatefulWidget {
+class CameraPage extends StatefulWidget {
   @override
-  _ReceiptPareserHomePageState createState() => _ReceiptPareserHomePageState();
+  _CameraAppState createState() => _CameraAppState();
 }
 
-class _ReceiptPareserHomePageState extends State<ReceiptPareserHomePage> {
-  File _image;
-  VisionText _visionText;
+class _CameraAppState extends State<CameraPage> {
+  CameraController controller;
+  bool _isScanBusy = false;
+  String _textDetected = "no text detected...";
 
-  Future _pickAnImage(src) async {
-    print('picking image...');
+  @override
+  void initState() {
+    super.initState();
+    controller = CameraController(cameras[0], ResolutionPreset.low);
 
-    final imageFile = await ImagePicker.pickImage(
-      source: src,
-    );
+    controller.initialize().then((_) {
+      if (!mounted) {
+        return;
+      }
 
-    print('picked image: $imageFile.toString()');
-
-    final FirebaseVisionImage visionImage =
-        FirebaseVisionImage.fromFile(imageFile);
-
-    final TextRecognizer textRecognizer =
-        FirebaseVision.instance.textRecognizer();
-
-    print('started text recognition;');
-
-    final VisionText recognizedText =
-        await textRecognizer.processImage(visionImage);
-
-    print('text recoginzed.');
-
-    if (mounted) {
-      setState(() {
-        _image = imageFile;
-        _visionText = recognizedText;
-      });
-    }
+      setState(() {});
+    });
   }
 
-  _findMaxSum() {
-    String text = _visionText.blocks
-          .map( (block) => block.text )
-          .join('\n');
-
-    RegExp exp = new RegExp(r"(\d{1,4},*)+\.\d{2}");
-    Iterable<RegExpMatch> matches = exp.allMatches(text);
-     
-    if (matches == null || matches.isEmpty) {
-      return "TOTAL SUM NOT FOUND";
-    }
-
-    return matches
-        .map( (match) => match.group(0).replaceAll(",", "") )
-        .map( (str) => double.parse(str) )
-        .reduce( (curr, next) => curr > next ? curr : next)
-        .toString();
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Receipt Parser Snapshot"),
-      ),
-      body: Center(
-        child: ListView(
+    if (!controller.value.isInitialized) {
+      return Container();
+    }
+
+    return ListView(children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            _image == null
-                ? Text('No image selected.')
-                : Column(
-                    children: <Widget>[
-                      GestureDetector(
-                        child: Image.file(_image), 
-                        onDoubleTap: () => _pickAnImage(ImageSource.gallery),
-                      ),
-                      Text("MAX SUM? :"),
-                      Text(
-                        _findMaxSum()
-                      ),
-                    ],
-                  ),
-          ],
+		GestureDetector(
+		onDoubleTap: () async {
+                  	controller.startImageStream((CameraImage availableImage) async {
+                    	if (_isScanBusy) {
+                      		print("1.5 -------- isScanBusy, skipping...");
+                      		return;
+                    	}
+
+                    	print("1.0 -------- isScanBusy = true");
+                    	_isScanBusy = true;
+
+			OcrManager.scanText(availableImage).then( (textVision) {
+				setState( () {
+					_textDetected = textVision ?? "";
+				});
+
+				controller.stopImageStream().then( (smth) { 
+					print('2.0 -------- ImageStream stopped, ready to restart.');
+					_isScanBusy = false; 
+					print('${controller.value}');
+				});
+						
+			});
+
+                  });
+              
+              	},
+		child: Container(
+				child: _cameraPreviewWidget(),
+				width: 200,
+				//width: MediaQuery.of(context).size.width,
+			),
+		),
+            ]
+	),
+      Text(_textDetected, style: TextStyle(fontSize: 18),),
+    ]);
+  }
+
+  Widget _cameraPreviewWidget() {
+    if (controller == null || !controller.value.isInitialized) {
+      return const Text(
+        'Tap a camera',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 24.0,
+          fontWeight: FontWeight.w900,
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _pickAnImage(ImageSource.camera),
-        tooltip: 'Pick an Image',
-        child: Icon(Icons.add_a_photo),
-      ),
-    );
+      );
+    } else {
+      return AspectRatio(
+        aspectRatio: controller.value.aspectRatio,
+        child: CameraPreview(controller),
+      );
+    }
   }
 }
