@@ -2,12 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Save receipt photos to library</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Take photos of receipts</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>For future video support</string>
+
+	<key>NSMicrophoneUsageDescription</key> 
+	<string>Need microphone access for uploading videos</string> 
+	<key>NSCameraUsageDescription</key> 
+	<string>Need camera access for uploading Images</string> 
+	<key>NSLocationUsageDescription</key> 
+	<string>Need location access for updating nearby friends</string> 
+	<key>NSLocationWhenInUseUsageDescription</key> 
+	<string>This app will use your location to show cool stuffs near you.</string> 
+	<key>NSPhotoLibraryUsageDescription</key> 
+	<string>Need Library access for uploading Images</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
