@@ -1,6 +1,8 @@
 PODS:
   - camera (0.0.1):
     - Flutter
+  - file_picker (0.0.1):
+    - Flutter
   - Firebase/Core (6.5.0):
     - Firebase/CoreOnly
     - FirebaseAnalytics (= 6.0.4)
@@ -92,18 +94,28 @@ PODS:
   - GTMSessionFetcher/Core (1.2.2)
   - GTMSessionFetcher/Full (1.2.2):
     - GTMSessionFetcher/Core (= 1.2.2)
+  - lamp (0.0.1):
+    - Flutter
   - nanopb (0.3.901):
     - nanopb/decode (= 0.3.901)
     - nanopb/encode (= 0.3.901)
   - nanopb/decode (0.3.901)
   - nanopb/encode (0.3.901)
+  - path_provider (0.0.1):
+    - Flutter
   - Protobuf (3.9.0)
+  - shared_preferences (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - camera (from `.symlinks/plugins/camera/ios`)
+  - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - Firebase/MLVisionTextModel
   - firebase_ml_vision (from `.symlinks/plugins/firebase_ml_vision/ios`)
   - Flutter (from `.symlinks/flutter/ios`)
+  - lamp (from `.symlinks/plugins/lamp/ios`)
+  - path_provider (from `.symlinks/plugins/path_provider/ios`)
+  - shared_preferences (from `.symlinks/plugins/shared_preferences/ios`)
 
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
@@ -126,13 +138,22 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   camera:
     :path: ".symlinks/plugins/camera/ios"
+  file_picker:
+    :path: ".symlinks/plugins/file_picker/ios"
   firebase_ml_vision:
     :path: ".symlinks/plugins/firebase_ml_vision/ios"
   Flutter:
     :path: ".symlinks/flutter/ios"
+  lamp:
+    :path: ".symlinks/plugins/lamp/ios"
+  path_provider:
+    :path: ".symlinks/plugins/path_provider/ios"
+  shared_preferences:
+    :path: ".symlinks/plugins/shared_preferences/ios"
 
 SPEC CHECKSUMS:
   camera: d56ad165545ae5a0ffb892376033760a969c68c8
+  file_picker: 408623be2125b79a4539cf703be3d4b3abe5e245
   Firebase: dedc9e48ea3f3649ad5f6b982f8a0c73508a14b5
   firebase_ml_vision: 6f896dc3988d333fc7c3572713b8819c827d5cea
   FirebaseAnalytics: 3fb375bc9d13779add4039716f868d233a473fad
@@ -148,8 +169,11 @@ SPEC CHECKSUMS:
   GoogleToolboxForMac: b3553629623a3b1bff17f555e736cd5a6d95ad55
   GoogleUtilities: d2b0e277a95962e09bb27f5cd42f5f0b6a506c7d
   GTMSessionFetcher: 61bb0f61a4cb560030f1222021178008a5727a23
+  lamp: d36cd3552d535c77ab49112704c0c9386b9268bb
   nanopb: 2901f78ea1b7b4015c860c2fdd1ea2fee1a18d48
+  path_provider: f96fff6166a8867510d2c25fdcc346327cc4b259
   Protobuf: 1097ca58584c8d9be81bfbf2c5ff5975648dd87a
+  shared_preferences: 1feebfa37bb57264736e16865e7ffae7fc99b523
 
 PODFILE CHECKSUM: 2505c3299a1468f28c8bb2d3717b634183283cc5
 

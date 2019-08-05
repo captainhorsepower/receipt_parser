@@ -10,13 +10,8 @@ class OcrManager {
 
     print("scanning!...");
 
-    /*
-     * https://firebase.google.com/docs/ml-kit/android/recognize-text
-     * .setWidth(480)   // 480x360 is typically sufficient for
-     * .setHeight(360)  // image recognition
-     */
+    print(Size(availableImage.width.toDouble(),availableImage.height.toDouble()));
 
-	print(Size(availableImage.width.toDouble(),availableImage.height.toDouble()));
     final FirebaseVisionImageMetadata metadata = FirebaseVisionImageMetadata(
         rawFormat: availableImage.format.raw,
         size: Size(availableImage.width.toDouble(),availableImage.height.toDouble()),
