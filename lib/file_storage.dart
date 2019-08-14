@@ -3,8 +3,7 @@ import 'dart:async';
 import 'Dart:io';
 
 class AccumulatingStorage {
-  
-  final _fileName = "local_storage.txt"; 
+  final _fileName = "local_storage.txt";
 
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
@@ -39,6 +38,6 @@ class AccumulatingStorage {
   }
 
   Future<File> addToSum(double addedSum) async {
-	return _writeSum(addedSum + (await readSum()) );
+    return _writeSum(addedSum + (await readSum()));
   }
 }
