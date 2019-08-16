@@ -199,19 +199,6 @@ class _CameraAppState extends State<CameraPage> {
     );
   }
 
-  Widget _cameraPreviewWidget() {
-    return Container(
-      width: 20,
-      child: Align(
-        alignment: Alignment(0.0, 0.0),
-        child: AspectRatio(
-          aspectRatio: controller.value.aspectRatio,
-          child: CameraPreview(controller),
-        ),
-      ),
-    );
-  }
-
   _showPickers(OcrState ocrState) {
     showModalBottomSheet(
         //shape: CircleBorder(),
