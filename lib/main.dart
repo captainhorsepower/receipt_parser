@@ -4,16 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:camera/camera.dart';
 
 import 'dart:async';
-import 'Dart:io'; 
 
 import 'package:lamp/lamp.dart';
 
 import 'ocr_engine.dart';
 import 'file_storage.dart'; 
 
-import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 List<CameraDescription> cameras;
 
