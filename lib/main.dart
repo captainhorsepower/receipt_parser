@@ -136,17 +136,16 @@ class _CameraAppState extends State<CameraPage> {
 
     return Stack(
       children: <Widget>[
-        Container(
-          width: MediaQuery.of(context).size.width,
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: Container(
-              height: controller.value.previewSize.width, // cuz rotation 90 ?
-              child: AspectRatio(
-                aspectRatio: controller.value.aspectRatio,
-                child: CameraPreview(controller),
-              ),
-            ),
+        OverflowBox(
+          maxHeight: MediaQuery.of(context).size.height,
+          maxWidth: () {
+            print('width ${MediaQuery.of(context).size.width}');
+            print('height ${MediaQuery.of(context).size.height}');
+            return MediaQuery.of(context).size.width;
+          }(),
+          child: AspectRatio(
+            aspectRatio: controller.value.aspectRatio,
+            child: CameraPreview(controller),
           ),
         ),
         Align(
