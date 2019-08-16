@@ -5,20 +5,12 @@ import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import 'ocr_state.dart';
-
 class OcrController {
   final TextRecognizer _textRecognizer =
       FirebaseVision.instance.textRecognizer();
 
-  void recognizeText(
-      OcrState state, CameraImage cameraImage) {
-    if (state.isTextRecognizerBusy) return null;
-
-    FirebaseVisionImage visionImage = _toFirebaseVisionImage(cameraImage);
-    _textRecognizer.processImage(visionImage).then((VisionText visionText) {
-      state.visionText = visionText;
-    });
+  Future<VisionText> recognizeText(CameraImage cameraImage) {
+    return _textRecognizer.processImage(_toFirebaseVisionImage(cameraImage));
   }
 
   void dispose() {
