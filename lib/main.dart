@@ -140,7 +140,13 @@ class _CameraAppState extends State<CameraPage> {
           width: MediaQuery.of(context).size.width,
           child: FittedBox(
             fit: BoxFit.cover,
-            child: _cameraPreviewWidget(),
+            child: Container(
+              height: controller.value.previewSize.width, // cuz rotation 90 ?
+              child: AspectRatio(
+                aspectRatio: controller.value.aspectRatio,
+                child: CameraPreview(controller),
+              ),
+            ),
           ),
         ),
         Align(
@@ -150,17 +156,19 @@ class _CameraAppState extends State<CameraPage> {
             height: 80,
             color: Theme.of(context).primaryColor,
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
-                CupertinoButton(
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: MaterialButton(
                     child: Icon(
                       !lamp.isOn ? Icons.flash_off : Icons.flash_on,
                       color: Colors.yellow,
-                      size: 50,
+                      size: 55,
                     ),
-                    onPressed: () {
-                      lamp.toggle();
-                      setState(() => {});
-                    }),
+                    onPressed: () => lamp.toggle(),
+                  ),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: FloatingActionButton(
@@ -170,6 +178,18 @@ class _CameraAppState extends State<CameraPage> {
                     ),
                     onPressed: () =>
                         _doOcrStuff(Provider.of<OcrState>(context)),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: MaterialButton(
+                    child: false
+                        ? Icon(
+                            Icons.photo,
+                            size: 55,
+                          )
+                        : Text('sucks'),
+                    onPressed: () {},
                   ),
                 ),
               ],
@@ -201,7 +221,6 @@ class _CameraAppState extends State<CameraPage> {
         builder: (BuildContext context) {
           String text = ocrState.visionText.text;
           return Text(text);
-          return multipicker();
         });
   }
 
