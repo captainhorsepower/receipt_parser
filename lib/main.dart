@@ -1,17 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:camera/camera.dart';
 
-import 'dart:async';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' show join;
 
-import 'package:lamp/lamp.dart';
 import 'package:provider/provider.dart';
-import 'package:receipt_parser/ocr_controller.dart';
+import 'package:receipt_parser/camera_page/bottom_action_bar.dart';
 
-import 'ocr_engine.dart';
-import 'file_storage.dart';
-import 'ocr_state.dart';
+import 'package:receipt_parser/ocr_controller.dart';
+import 'package:receipt_parser/file_storage.dart';
+import 'package:receipt_parser/ocr_state.dart';
 
 List<CameraDescription> cameras;
 
@@ -51,13 +53,9 @@ class _CameraAppState extends State<CameraPage> {
   CameraController controller;
 
   String _persistentText = "file is not opened";
-  int _dollars = 0;
-  int _cents = 0;
-  int _grands = 0;
 
   final _ocrController = OcrController();
   final storage = AccumulatingStorage();
-  final lamp = LampController();
 
   void _doOcrStuff(final OcrState ocrState) {
     if (controller.value.isStreamingImages) {
@@ -85,6 +83,25 @@ class _CameraAppState extends State<CameraPage> {
     });
   }
 
+  // TODO: return fuctionality when shutter sound can be disabled
+  // void _takePicture(final OcrState ocrState) {
+  //   print('Taking picture...');
+
+  //   // Construct the path where the image should be saved using the
+  //   // pattern package.
+  //   getTemporaryDirectory().then((dir) {
+  //     final path = join(
+  //       dir.path,
+  //       'lastTakenImage.png',
+  //     );
+
+  //     controller.takePicture(path).then((_) {
+  //       ocrState.imagePath = path;
+  //       print('Image was taken.');
+  //     });
+  //   });
+  // }
+
   _findMaxSum(String text) {
     RegExp exp = new RegExp(
         r"[1-9]\d{0,2}(,|-|\s|\.)*((\d|U|D){3}(,|-|\s|\.)*)*((,|-|\.)(\d|U|D){2})\n");
@@ -92,10 +109,10 @@ class _CameraAppState extends State<CameraPage> {
     Iterable<RegExpMatch> matches = exp.allMatches(text);
 
     if (matches == null || matches.isEmpty) {
-      return _grands * 1000 + _dollars + _cents / 100;
+      // return _grands * 1000 + _dollars + _cents / 100;
     }
 
-    matches.forEach((match) => print('------- match ------ ${match.group(0)}'));
+    // matches.forEach((match) => print('------- match ------ ${match.group(0)}'));
 
     return matches
         .map((match) => match
@@ -105,7 +122,6 @@ class _CameraAppState extends State<CameraPage> {
                 match.group(5).replaceAll(new RegExp(r'(,|\s|\.|-)'), '.'))
             .replaceAll(new RegExp(r'(U|D)'), "0")
             .trim())
-        //.join("; ");
         .map((str) => double.parse(str))
         .reduce((curr, next) => curr > next ? curr : next);
   }
@@ -113,7 +129,10 @@ class _CameraAppState extends State<CameraPage> {
   @override
   void initState() {
     super.initState();
-    controller = CameraController(cameras[0], ResolutionPreset.medium);
+    controller = CameraController(
+      cameras.first,
+      ResolutionPreset.medium,
+    );
 
     controller.initialize().then((_) {
       if (!mounted) {
@@ -133,16 +152,13 @@ class _CameraAppState extends State<CameraPage> {
   @override
   Widget build(BuildContext context) {
     if (!controller.value.isInitialized) return Container();
+    final ocrState = Provider.of<OcrState>(context);
 
     return Stack(
       children: <Widget>[
         OverflowBox(
           maxHeight: MediaQuery.of(context).size.height,
-          maxWidth: () {
-            print('width ${MediaQuery.of(context).size.width}');
-            print('height ${MediaQuery.of(context).size.height}');
-            return MediaQuery.of(context).size.width;
-          }(),
+          maxWidth: MediaQuery.of(context).size.width,
           child: AspectRatio(
             aspectRatio: controller.value.aspectRatio,
             child: CameraPreview(controller),
@@ -150,50 +166,8 @@ class _CameraAppState extends State<CameraPage> {
         ),
         Align(
           alignment: Alignment.bottomCenter,
-          child: Container(
-            width: MediaQuery.of(context).size.width,
-            height: 80,
-            color: Theme.of(context).primaryColor,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: MaterialButton(
-                    child: Icon(
-                      !lamp.isOn ? Icons.flash_off : Icons.flash_on,
-                      color: Colors.yellow,
-                      size: 55,
-                    ),
-                    onPressed: () => lamp.toggle(),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: FloatingActionButton(
-                    child: Icon(
-                      Icons.camera,
-                      size: 55,
-                    ),
-                    onPressed: () =>
-                        _doOcrStuff(Provider.of<OcrState>(context)),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: MaterialButton(
-                    child: false
-                        ? Icon(
-                            Icons.photo,
-                            size: 55,
-                          )
-                        : Text('sucks'),
-                    onPressed: () {},
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child:
+              BottomActionBar.withShutterCallback(() => _doOcrStuff(ocrState)),
         ),
       ],
     );
@@ -210,44 +184,44 @@ class _CameraAppState extends State<CameraPage> {
         });
   }
 
-  Widget multipicker() {
-    return Container(
-      height: 270,
-      color: Colors.white,
-      child: Column(
-        children: [
-          Container(
-            height: 200.0,
-            width: 300,
-            color: Colors.white,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Container(
-                  width: 87,
-                  child: CupertinoPicker(
-                      looping: true,
-                      scrollController: new FixedExtentScrollController(
-                        initialItem: _grands,
-                      ),
-                      itemExtent: 26.0,
-                      useMagnifier: true,
-                      magnification: 2.0,
-                      backgroundColor: Colors.white,
-                      onSelectedItemChanged: (int index) {
-                        setState(() {
-                          _grands = index;
-                        });
-                      },
-                      children: new List<Widget>.generate(1000, (int index) {
-                        return new Center(
-                          child: FittedBox(
-                            child: new Text('${index}'),
-                            fit: BoxFit.cover,
-                          ),
-                        );
-                      })),
-                ),
+  // Widget multipicker() {
+  //   return Container(
+  //     height: 270,
+  //     color: Colors.white,
+  //     child: Column(
+  //       children: [
+  //         Container(
+  //           height: 200.0,
+  //           width: 300,
+  //           color: Colors.white,
+  //           child: Row(
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             children: <Widget>[
+  //               Container(
+  //                 width: 87,
+  //                 child: CupertinoPicker(
+  //                     looping: true,
+  //                     scrollController: new FixedExtentScrollController(
+  //                       initialItem: _grands,
+  //                     ),
+  //                     itemExtent: 26.0,
+  //                     useMagnifier: true,
+  //                     magnification: 2.0,
+  //                     backgroundColor: Colors.white,
+  //                     onSelectedItemChanged: (int index) {
+  //                       setState(() {
+  //                         _grands = index;
+  //                       });
+  //                     },
+  //                     children: new List<Widget>.generate(1000, (int index) {
+  //                       return new Center(
+  //                         child: FittedBox(
+  //                           child: new Text('${index}'),
+  //                           fit: BoxFit.cover,
+  //                         ),
+  //                       );
+  //                     })),
+                // ),
                 // Container(
                 //   width: 25,
                 //   child: CupertinoPicker(
@@ -343,52 +317,33 @@ class _CameraAppState extends State<CameraPage> {
                 //         );
                 //       })),
                 // ),
-              ],
-            ),
-          ),
-          Text('accumulated sum: $_persistentText'),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CupertinoButton(
-                child: Text('read'),
-                onPressed: () async {
-                  final persistedSum = await storage.readSum();
-                  setState(() => {_persistentText = '$persistedSum'});
-                },
-              ),
-              CupertinoButton(
-                child: Text('store'),
-                onPressed: () async {
-                  await storage
-                      .addToSum(_grands * 1000 + _dollars + _cents / 100);
-                  final persistedSum = await storage.readSum();
-                  setState(() => {_persistentText = '$persistedSum'});
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class LampController {
-  bool isOn = false;
-
-  turnOn({intensity: 1.0}) {
-    Lamp.turnOn(intensity: intensity);
-    isOn = true;
-  }
-
-  turnOff() {
-    Lamp.turnOff();
-    isOn = false;
-  }
-
-  toggle() {
-    isOn ? turnOff() : turnOn();
-    isOn != isOn;
-  }
+    //           ],
+    //         ),
+    //       ),
+    //       Text('accumulated sum: $_persistentText'),
+    //       Row(
+    //         mainAxisAlignment: MainAxisAlignment.center,
+    //         children: [
+    //           CupertinoButton(
+    //             child: Text('read'),
+    //             onPressed: () async {
+    //               final persistedSum = await storage.readSum();
+    //               setState(() => {_persistentText = '$persistedSum'});
+    //             },
+    //           ),
+    //           CupertinoButton(
+    //             child: Text('store'),
+    //             onPressed: () async {
+    //               await storage
+    //                   .addToSum(_grands * 1000 + _dollars + _cents / 100);
+    //               final persistedSum = await storage.readSum();
+    //               setState(() => {_persistentText = '$persistedSum'});
+    //             },
+    //           ),
+    //         ],
+    //       ),
+    //     ],
+    //   ),
+    // );
+  // }
 }
