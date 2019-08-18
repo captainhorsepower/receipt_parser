@@ -148,11 +148,14 @@ class _CameraAppState extends State<CameraPage> {
                     future: foo,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done) {
-                        var picker = MoneyMultiPicker(snapshot.data?.text);
+                        var picker = MoneyMultiPicker();
 
                         return Column(
                           children: <Widget>[
-                            picker,
+                            ChangeNotifierProvider(
+                              builder: (_) => MultiPickerState(snapshot.data?.text),
+                              child: picker,
+                            ),
                             MaterialButton(
                               onPressed: () => Navigator.pop(
                                 context,
