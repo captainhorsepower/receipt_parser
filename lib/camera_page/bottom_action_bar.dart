@@ -1,12 +1,10 @@
-import 'dart:io';
 
-import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:receipt_parser/ocr_state.dart';
+import 'package:receipt_parser/camera_page/ocr/ocr_state.dart';
 import 'package:receipt_parser/camera_page/bottom_action_bar_state.dart';
 
 class _FlashlightToggle extends StatelessWidget {
