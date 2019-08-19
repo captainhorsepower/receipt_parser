@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
-class MultiPickerState with ChangeNotifier {
+Color _dimmedGray = Color.fromRGBO(190, 190, 190, 0.3);
+TextStyle _dimmed = TextStyle(color: _dimmedGray);
+TextStyle _active = TextStyle(color: Colors.white);
+
+class MoneyState with ChangeNotifier {
   int _grands = 0;
   int _dollars = 0;
   int _cents = 0;
 
-  MultiPickerState(final String text) {
+  MoneyState(final String text) {
     final money = _findTotalAmountInText(text);
     _grands = money ~/ 1000;
     _dollars = money.floor() % 1000;
@@ -35,8 +39,6 @@ class MultiPickerState with ChangeNotifier {
   }
 
   double _findTotalAmountInText(String text) {
-    debugPrint('got text : $text');
-
     final leadingSymbols = '[1-9]\\d{0,2}';
     final separator = '(\\.|,| {1}) ?';
     final innerSymbols = '(\\d|U|D){3}';
@@ -46,11 +48,10 @@ class MultiPickerState with ChangeNotifier {
     RegExp exp = RegExp(
         "(^|$notDigit)$leadingSymbols($separator$innerSymbols){0,2}$separator$cents(\$|$notDigit)");
 
-    print(exp.toString());
     List<RegExpMatch> matches = exp.allMatches(text).toList();
 
     if (matches.isEmpty) {
-      return -1.0;
+      return 0.0;
     }
 
     matches.removeWhere((m) {
@@ -71,62 +72,76 @@ class MultiPickerState with ChangeNotifier {
   }
 }
 
-class _GeneralPicker extends StatefulWidget {
-  int _initialItem;
-  int _itemCount;
-  Widget Function(int index) _itemBuilder;
-  void Function(int index) _onSelectedItemChanged;
+class _GeneralPicker extends StatelessWidget {
+  final int _initialItem;
+  final int _itemCount;
+  final Widget Function(int index) _itemBuilder;
+  final void Function(int index) _onSelectedItemChanged;
+  final FixedExtentScrollController _scrollController;
 
-  bool _looping;
-  double _itemExtent;
-  bool _useMagnifier;
-  double _magnification;
-  Color _backgroundColor;
+  final bool _looping;
+  final double _itemExtent;
+  final bool _useMagnifier;
+  final double _magnification;
+  final Color _backgroundColor;
 
-  _GeneralPicker({
+  _GeneralPicker.private(
+      this._initialItem,
+      this._itemCount,
+      this._itemBuilder,
+      this._onSelectedItemChanged,
+      this._scrollController,
+      this._backgroundColor,
+      this._looping,
+      this._itemExtent,
+      this._useMagnifier,
+      this._magnification);
+
+  static of({
     @required int initalItem,
     @required int itemCount,
     @required Widget Function(int index) itemBuilder,
     @required void Function(int index) onSelectedItemChanged,
-    Color backgroundColor: Colors.green,
+    Color backgroundColor: Colors.transparent,
     bool looping: true,
-    double itemExtent: 26,
+    double itemExtent: 60,
     bool useMagnifier: true,
-    double magnification: 2.0,
+    double magnification: 1.15,
   }) {
-    _initialItem = initalItem;
-    _itemCount = itemCount;
-    _itemBuilder = itemBuilder;
-    _onSelectedItemChanged = onSelectedItemChanged;
-
-    _backgroundColor = backgroundColor;
-    _looping = looping;
-    _itemExtent = itemExtent;
-    _useMagnifier = useMagnifier;
-    _magnification = magnification;
+    return _GeneralPicker.private(
+        initalItem,
+        itemCount,
+        itemBuilder,
+        onSelectedItemChanged,
+        FixedExtentScrollController(initialItem: initalItem),
+        backgroundColor,
+        looping,
+        itemExtent,
+        useMagnifier,
+        magnification);
   }
 
   @override
-  __GeneralPickerState createState() => __GeneralPickerState();
-}
-
-class __GeneralPickerState extends State<_GeneralPicker> {
-  @override
   Widget build(BuildContext context) {
     return CupertinoPicker(
-      scrollController: new FixedExtentScrollController(
-        initialItem: widget._initialItem,
-      ),
-      looping: widget._looping,
-      itemExtent: widget._itemExtent,
-      useMagnifier: widget._useMagnifier,
-      magnification: widget._magnification,
-      backgroundColor: widget._backgroundColor,
+      scrollController: _scrollController,
+      looping: _looping,
+      itemExtent: _itemExtent,
+      useMagnifier: _useMagnifier,
+      magnification: _magnification,
+      backgroundColor: _backgroundColor,
       children: List<Widget>.generate(
-        widget._itemCount,
-        widget._itemBuilder,
+        _itemCount,
+        (i) {
+          var item = _itemBuilder(i);
+          return FittedBox(
+            fit: BoxFit.contain,
+            child: item,
+          );
+        },
       ),
-      onSelectedItemChanged: widget._onSelectedItemChanged,
+      onSelectedItemChanged: _onSelectedItemChanged,
+      diameterRatio: 1.1,
     );
   }
 }
@@ -134,13 +149,25 @@ class __GeneralPickerState extends State<_GeneralPicker> {
 class _GrandPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final moneyState = Provider.of<MultiPickerState>(context);
+    final moneyState = Provider.of<MoneyState>(context);
 
-    return _GeneralPicker(
+    return _GeneralPicker.of(
       initalItem: moneyState.grands,
       itemCount: 1000,
       itemBuilder: (int index) {
-        return Text('$index');
+        final EdgeInsets padding = index == moneyState.grands
+            ? EdgeInsets.only(top: 4, bottom: 4)
+            : EdgeInsets.only(bottom: 6, top: 6);
+        return Padding(
+          padding: padding,
+          child: Container(
+            child: Text(
+              index < 9 ? '$index' : index < 99 ? '$index' : '$index',
+              style:
+                  index != moneyState.grands || index == 0 ? _dimmed : _active,
+            ),
+          ),
+        );
       },
       onSelectedItemChanged: (int index) {
         moneyState.grands = index;
@@ -149,16 +176,57 @@ class _GrandPicker extends StatelessWidget {
   }
 }
 
+class _ComaPicker extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final moneyState = Provider.of<MoneyState>(context);
+    return _GeneralPicker.of(
+      initalItem: 0,
+      itemCount: 1,
+      itemBuilder: (_) {
+        return Text(
+          ' ,',
+          style: moneyState.grands > 0 ? _active : _dimmed,
+        );
+      },
+      onSelectedItemChanged: null,
+      looping: false,
+    );
+  }
+}
+
 class _DollarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final moneyState = Provider.of<MultiPickerState>(context);
-
-    return _GeneralPicker(
+    final moneyState = Provider.of<MoneyState>(context);
+    return _GeneralPicker.of(
       initalItem: moneyState.dollars,
       itemCount: 1000,
       itemBuilder: (int index) {
-        return Text(',$index');
+        final EdgeInsets padding = index == moneyState.dollars
+            ? EdgeInsets.only(top: 4, bottom: 4)
+            : EdgeInsets.only(bottom: 6, top: 6);
+        return Padding(
+          padding: padding,
+          child: moneyState.grands > 0
+              ? Text(
+                  index < 9 ? '00$index' : index < 99 ? '0$index' : '$index',
+                  style: index == moneyState.dollars ? _active : _dimmed,
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      index < 9 ? '00' : index < 99 ? '0' : '',
+                      style: _dimmed,
+                    ),
+                    Text(
+                      '$index',
+                      style: index == moneyState.dollars ? _active : _dimmed,
+                    )
+                  ],
+                ),
+        );
       },
       onSelectedItemChanged: (int index) {
         moneyState.dollars = index;
@@ -167,16 +235,41 @@ class _DollarPicker extends StatelessWidget {
   }
 }
 
+class _DotPicker extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return _GeneralPicker.of(
+      initalItem: 0,
+      itemCount: 1,
+      itemBuilder: (_) => Text(
+        '.',
+        textAlign: TextAlign.center,
+      ),
+      onSelectedItemChanged: null,
+      looping: false,
+    );
+  }
+}
+
 class _CentPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final moneyState = Provider.of<MultiPickerState>(context);
+    final moneyState = Provider.of<MoneyState>(context);
 
-    return _GeneralPicker(
+    return _GeneralPicker.of(
       initalItem: moneyState.cents,
       itemCount: 100,
       itemBuilder: (int index) {
-        return Text('.$index');
+        final EdgeInsets padding = index == moneyState.cents
+            ? EdgeInsets.only(top: 4, bottom: 4)
+            : EdgeInsets.only(bottom: 6, top: 6);
+        return Padding(
+          padding: padding,
+          child: Text(
+            index < 9 ? '0$index' : '$index',
+            style: index == moneyState.cents ? _active : _dimmed,
+          ),
+        );
       },
       onSelectedItemChanged: (int index) {
         moneyState.cents = index;
@@ -185,25 +278,58 @@ class _CentPicker extends StatelessWidget {
   }
 }
 
-class MoneyMultiPicker extends StatefulWidget {
-  double _total = -1.0;
+class MoneyPicker extends StatefulWidget {
+  double _total = 0.0;
   double get total => _total;
 
   @override
-  _MoneyMultiPickerState createState() => _MoneyMultiPickerState();
+  _MoneyPickerState createState() => _MoneyPickerState();
 }
 
-class _MoneyMultiPickerState extends State<MoneyMultiPicker> {
+class _MoneyPickerState extends State<MoneyPicker> {
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width / 3;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Container(height: 160, width: width, child: _GrandPicker()),
-        Container(height: 160, width: width, child: _DollarPicker()),
-        Container(height: 160, width: width, child: _CentPicker()),
-      ],
+    final moneyStaye = Provider.of<MoneyState>(context);
+
+    widget._total =
+        moneyStaye.grands * 1000 + moneyStaye.dollars + moneyStaye.cents / 100;
+
+    return Container(
+      width: 320,
+      height: 180,
+      child: Column(
+        children: <Widget>[
+          Flexible(
+            flex: 20,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Flexible(
+                  flex: 60,
+                  child: Container(child: _GrandPicker()),
+                ),
+                Flexible(
+                  flex: 10,
+                  child: _ComaPicker(),
+                ),
+                Flexible(
+                  flex: 60,
+                  child: Container(child: _DollarPicker()),
+                ),
+                Flexible(
+                  flex: 10,
+                  fit: FlexFit.tight,
+                  child: _DotPicker(),
+                ),
+                Flexible(
+                  flex: 60,
+                  child: Container(child: _CentPicker()),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

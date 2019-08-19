@@ -148,12 +148,12 @@ class _CameraAppState extends State<CameraPage> {
                     future: foo,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.done) {
-                        var picker = MoneyMultiPicker();
+                        var picker = MoneyPicker();
 
                         return Column(
                           children: <Widget>[
                             ChangeNotifierProvider(
-                              builder: (_) => MultiPickerState(snapshot.data?.text),
+                              builder: (_) => MoneyState(snapshot.data?.text),
                               child: picker,
                             ),
                             MaterialButton(
@@ -165,7 +165,6 @@ class _CameraAppState extends State<CameraPage> {
                             )
                           ],
                         );
-                        return Text(ocrState.visionText.text);
                       } else {
                         return CircularProgressIndicator();
                       }
