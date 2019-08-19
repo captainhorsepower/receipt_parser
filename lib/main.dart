@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:camera/camera.dart';
+import 'package:progress_indicators/progress_indicators.dart';
 
 import 'package:provider/provider.dart';
+
 import 'package:receipt_parser/camera_page/bottom_action_bar.dart';
 import 'package:receipt_parser/camera_page/bottom_sheet_pickers.dart';
 import 'package:receipt_parser/camera_page/ocr/ocr_controller.dart';
@@ -31,7 +33,7 @@ class OcrApp extends StatelessWidget {
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(40),
           child: AppBar(
-            title: Text('Ocr Receipts'),
+            title: Text('Ready to scan'),
           ),
         ),
         body: ChangeNotifierProvider(
@@ -79,7 +81,7 @@ class _CameraAppState extends State<CameraPage> {
     });
 
     // return ocrFuture with delay <= maxDelayMillis
-    final maxDelayMillis = 70;
+    final maxDelayMillis = 1600;
     return Future.sync(() async {
       while (foo == null) {
         await Future.delayed(Duration(milliseconds: maxDelayMillis));
@@ -144,36 +146,118 @@ class _CameraAppState extends State<CameraPage> {
               showModalBottomSheet(
                 context: context,
                 builder: (BuildContext context) {
-                  return FutureBuilder(
-                    future: foo,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
+                  final _dimmedGray = Color.fromRGBO(190, 190, 190, 1.0);
+                  final cupertinoButtonsStyle =
+                      TextStyle(fontSize: 18, color: _dimmedGray);
+
+                  return Container(
+                    height: 350,
+                    child: FutureBuilder(
+                      future: foo,
+                      builder: (context, snapshot) {
                         var picker = MoneyPicker();
 
                         return Column(
                           children: <Widget>[
-                            ChangeNotifierProvider(
-                              builder: (_) => MoneyState(snapshot.data?.text),
-                              child: picker,
-                            ),
-                            MaterialButton(
-                              onPressed: () => Navigator.pop(
-                                context,
-                                picker.total,
+                            Flexible(
+                              flex: 3,
+                              child: Align(
+                                alignment: Alignment.center,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(
+                                      top: 15.0, bottom: 5),
+                                  child: Container(
+                                    height: 100,
+                                    child: snapshot.connectionState ==
+                                            ConnectionState.done
+                                        ? Text(
+                                            'Adjust receipt total:',
+                                            style: TextStyle(
+                                                fontSize: 26,
+                                                color: _dimmedGray),
+                                          )
+                                        : FadingText(
+                                            'Adjust receipt total:',
+                                            style: TextStyle(
+                                                fontSize: 26,
+                                                color: _dimmedGray),
+                                          ),
+                                  ),
+                                ),
                               ),
-                              child: Text('exit'),
+                            ),
+                            Flexible(
+                              flex: 12,
+                              child: Container(
+                                height: 200,
+                                // child: false
+                                child: snapshot.connectionState ==
+                                        ConnectionState.done
+                                    ? ChangeNotifierProvider(
+                                        builder: (_) =>
+                                            MoneyState(snapshot.data?.text),
+                                        child: picker,
+                                      )
+                                    : JumpingDotsProgressIndicator(
+                                        fontSize: 60,
+                                        color: _dimmedGray,
+                                        numberOfDots: 7,
+                                        dotSpacing: 2.0,
+                                        milliseconds: 200,
+                                      ),
+                              ),
+                            ),
+                            Flexible(
+                              flex: 3,
+                              child: Container(
+                                height: 50,
+                                child: snapshot.connectionState ==
+                                        ConnectionState.done
+                                    ? Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: <Widget>[
+                                          CupertinoButton(
+                                            child: Text('cancel',
+                                                style: cupertinoButtonsStyle),
+                                            onPressed: () => Navigator.pop(
+                                              context,
+                                            ),
+                                          ),
+                                          CupertinoButton(
+                                            child: Text('done',
+                                                style: cupertinoButtonsStyle),
+                                            onPressed: () => Navigator.pop(
+                                              context,
+                                              picker.total,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : CupertinoButton(
+                                        child: Text('cancel',
+                                            style: cupertinoButtonsStyle),
+                                        onPressed: () => Navigator.pop(
+                                          context,
+                                        ),
+                                      ),
+                              ),
                             )
                           ],
                         );
-                      } else {
-                        return CircularProgressIndicator();
-                      }
-                    },
+                      },
+                    ),
                   );
                 },
               ).then((val) {
-                print('ModalBottomSheet Future completed');
-                print('and val is $val');
+                if (val != null)
+                  showBottomSheet(
+                      context: context,
+                      builder: (context) {
+                        return Container();
+                      });
               });
             }
           }),
