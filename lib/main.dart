@@ -81,7 +81,7 @@ class _CameraAppState extends State<CameraPage> {
     });
 
     // return ocrFuture with delay <= maxDelayMillis
-    final maxDelayMillis = 1600;
+    final maxDelayMillis = 40;
     return Future.sync(() async {
       while (foo == null) {
         await Future.delayed(Duration(milliseconds: maxDelayMillis));
