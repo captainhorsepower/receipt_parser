@@ -49,14 +49,19 @@ class _CameraAppState extends State<_CameraPage>
 
   /// bottom bar slide up
   Animation<double> slideUp;
+  Animation<double> expand;
+  Animation<double> expandBottomBar;
 
   /// switch bottom bar actions to money picker
   Animation<double> flip;
   Animation<double> cameraBlur;
   Animation<double> cameraDimming;
 
-  final bottomBarHeight = 100.0;
-  final raisedBottomBarHeight = 400.0;
+  final bottomBarHeight = 80.0;
+  final bottomBarHeightExpanded = 200.0;
+
+  final bottomSheetHeight = 80.0;
+  final bottomSheetHeightExpanded = 300.0;
 
   /// do all necessary OCR work and then return future with VisionText.
   Future<VisionText> _getOcrFuture() {
@@ -123,25 +128,26 @@ class _CameraAppState extends State<_CameraPage>
   }
 
   Widget _blurShield() => AnimatedBuilder(
-            animation: cameraBlur,
-            builder: (_, builderChild) {
-              return BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: cameraBlur.value,
-                  sigmaY: cameraBlur.value,
-                ),
-                child: Opacity(
-                  opacity: cameraDimming.value,
-                  child: builderChild,
-                ),
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-              ),
+        animation: cameraBlur,
+        builder: (_, builderChild) {
+          return BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: cameraBlur.value,
+              sigmaY: cameraBlur.value,
+            ),
+            child: Opacity(
+              opacity: cameraDimming.value,
+              child: builderChild,
             ),
           );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+          ),
+        ),
+      );
+
   @override
   void initState() {
     _cameraController =
@@ -171,45 +177,62 @@ class _CameraAppState extends State<_CameraPage>
     final maxHeight = MediaQuery.of(context).size.height;
     final maxWidth = MediaQuery.of(context).size.width;
 
-
     // ##############################
     // ###### INIT ANIMATIONS #######
     // ##############################
 
-    slideUp = Tween(begin: bottomBarHeight, end: raisedBottomBarHeight)
+    expand = Tween(begin: bottomSheetHeight, end: bottomSheetHeightExpanded)
         .animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.bounceIn,
+      curve: Curves.easeInCirc,
+    ));
+
+    expandBottomBar =
+        Tween(begin: bottomBarHeight, end: bottomBarHeightExpanded)
+            .animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInCirc,
+    ));
+
+    slideUp = Tween(begin: bottomBarHeight, end: bottomBarHeightExpanded)
+        .animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInCirc,
     ));
 
     flip = Tween(begin: 0.0, end: pi).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.bounceIn,
+      curve: Curves.easeInCirc,
     ));
 
     cameraBlur = Tween(begin: 0.0, end: 10.0).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.decelerate,
     ));
-    
+
     cameraDimming = Tween(begin: 0.0, end: 0.5).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.ease,
     ));
 
+    final moneyPicker = Transform(
+      transform: Matrix4.identity()..rotateX(pi),
+      origin: Offset(0.0, bottomBarHeightExpanded / 2),
+      child: MoneyPicker(),
+    );
+
     return Stack(
       children: <Widget>[
-
         // camera preview
         OverflowBox(
           maxHeight: maxHeight,
           maxWidth: maxWidth,
           child: _cameraController.value.isInitialized
-                ? _cameraPreview()
-                : _cameraError(context),
+              ? _cameraPreview()
+              : _cameraError(context),
         ),
 
-        // blur an opcacity for camera, 
+        // blur an opcacity for camera,
         // if used on cameraPreview directly holds an image
         Align(
           alignment: Alignment.center,
@@ -218,26 +241,73 @@ class _CameraAppState extends State<_CameraPage>
 
         Align(
           alignment: Alignment.bottomCenter,
-          child: BottomActionBar.withShutterCallback(() {
-            _animationController.forward();
 
-            // get future that returns VisionText,
-            // while it's computing I can show animations!
-            // final foo = _getOcrFuture();
+          // expands bottom sheet
+          child: AnimatedBuilder(
+            animation: expand,
+            builder: (context, buildChild) {
+              return Container(
+                height: expand.value,
+                child: buildChild,
+              );
+            },
 
-            // don't forget to update state upon completion
-            // foo.then((visionText) {
-            //   ocrState.visionText = visionText;
-            // });
-          }),
+            // bottom sheet itself
+            child: Container(
+              color: Theme.of(context).primaryColor,
+              width: maxWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: <Widget>[
+                  // expand bar with shutter
+                  AnimatedBuilder(
+                    animation: expandBottomBar,
+                    builder: (context, buildChild) {
+                      return Container(
+                        height: expandBottomBar.value,
+
+                        // flip to money picker
+                        child: AnimatedBuilder(
+                          animation: flip,
+                          builder: (context, buildChild) => Transform(
+                            transform: Matrix4.identity()..rotateX(flip.value),
+                            origin: Offset(0.0, bottomBarHeightExpanded / 2),
+                            child:
+                                flip.value < pi / 2 ? buildChild : moneyPicker,
+                          ),
+                          child: buildChild,
+                        ),
+                      );
+                    },
+                    child: BottomActionBar.withShutterCallback(() {
+                      _animationController.forward();
+
+                      // get future that returns VisionText,
+                      // while it's computing I can show animations!
+                      // final foo = _getOcrFuture();
+
+                      // don't forget to update state upon completion
+                      // foo.then((visionText) {
+                      //   ocrState.visionText = visionText;
+                      // });
+                    }),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-
 
         // TODO: remove this
         Align(
             alignment: Alignment(-0.8, 0.95),
-            child: FloatingActionButton(
-              onPressed: () => _animationController.reverse(),
+            child: GestureDetector(
+              onDoubleTap: () => _animationController.forward(),
+              child: FloatingActionButton(
+                onPressed: () => _animationController.reverse(),
+              ),
             ))
       ],
     );

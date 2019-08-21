@@ -7,12 +7,22 @@ Color _dimmedGray = Color.fromRGBO(190, 190, 190, 0.3);
 TextStyle _dimmed = TextStyle(color: _dimmedGray);
 TextStyle _active = TextStyle(color: Colors.white);
 
-class MoneyState with ChangeNotifier {
+class MoneyPicker extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      builder: (_) => _MoneyState("100.50"),
+      child: _MoneyPicker(),
+    );
+  }
+}
+
+class _MoneyState with ChangeNotifier {
   int _grands = 0;
   int _dollars = 0;
   int _cents = 0;
 
-  MoneyState(final String text) {
+  _MoneyState(final String text) {
     final money = _findTotalAmountInText(text);
     _grands = money ~/ 1000;
     _dollars = money.floor() % 1000;
@@ -149,13 +159,13 @@ class _GeneralPicker extends StatelessWidget {
 class _GrandPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final moneyState = Provider.of<MoneyState>(context);
+    final _moneyState = Provider.of<_MoneyState>(context);
 
     return _GeneralPicker.of(
-      initalItem: moneyState.grands,
+      initalItem: _moneyState.grands,
       itemCount: 1000,
       itemBuilder: (int index) {
-        final EdgeInsets padding = index == moneyState.grands
+        final EdgeInsets padding = index == _moneyState.grands
             ? EdgeInsets.only(top: 4, bottom: 4)
             : EdgeInsets.only(bottom: 6, top: 6);
         return Padding(
@@ -164,13 +174,13 @@ class _GrandPicker extends StatelessWidget {
             child: Text(
               index < 9 ? '$index' : index < 99 ? '$index' : '$index',
               style:
-                  index != moneyState.grands || index == 0 ? _dimmed : _active,
+                  index != _moneyState.grands || index == 0 ? _dimmed : _active,
             ),
           ),
         );
       },
       onSelectedItemChanged: (int index) {
-        moneyState.grands = index;
+        _moneyState.grands = index;
       },
     );
   }
@@ -179,14 +189,14 @@ class _GrandPicker extends StatelessWidget {
 class _ComaPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final moneyState = Provider.of<MoneyState>(context);
+    final _moneyState = Provider.of<_MoneyState>(context);
     return _GeneralPicker.of(
       initalItem: 0,
       itemCount: 1,
       itemBuilder: (_) {
         return Text(
           ' ,',
-          style: moneyState.grands > 0 ? _active : _dimmed,
+          style: _moneyState.grands > 0 ? _active : _dimmed,
         );
       },
       onSelectedItemChanged: null,
@@ -198,20 +208,20 @@ class _ComaPicker extends StatelessWidget {
 class _DollarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final moneyState = Provider.of<MoneyState>(context);
+    final _moneyState = Provider.of<_MoneyState>(context);
     return _GeneralPicker.of(
-      initalItem: moneyState.dollars,
+      initalItem: _moneyState.dollars,
       itemCount: 1000,
       itemBuilder: (int index) {
-        final EdgeInsets padding = index == moneyState.dollars
+        final EdgeInsets padding = index == _moneyState.dollars
             ? EdgeInsets.only(top: 4, bottom: 4)
             : EdgeInsets.only(bottom: 6, top: 6);
         return Padding(
           padding: padding,
-          child: moneyState.grands > 0
+          child: _moneyState.grands > 0
               ? Text(
                   index < 9 ? '00$index' : index < 99 ? '0$index' : '$index',
-                  style: index == moneyState.dollars ? _active : _dimmed,
+                  style: index == _moneyState.dollars ? _active : _dimmed,
                 )
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -222,14 +232,14 @@ class _DollarPicker extends StatelessWidget {
                     ),
                     Text(
                       '$index',
-                      style: index == moneyState.dollars ? _active : _dimmed,
+                      style: index == _moneyState.dollars ? _active : _dimmed,
                     )
                   ],
                 ),
         );
       },
       onSelectedItemChanged: (int index) {
-        moneyState.dollars = index;
+        _moneyState.dollars = index;
       },
     );
   }
@@ -254,31 +264,31 @@ class _DotPicker extends StatelessWidget {
 class _CentPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final moneyState = Provider.of<MoneyState>(context);
+    final _moneyState = Provider.of<_MoneyState>(context);
 
     return _GeneralPicker.of(
-      initalItem: moneyState.cents,
+      initalItem: _moneyState.cents,
       itemCount: 100,
       itemBuilder: (int index) {
-        final EdgeInsets padding = index == moneyState.cents
+        final EdgeInsets padding = index == _moneyState.cents
             ? EdgeInsets.only(top: 4, bottom: 4)
             : EdgeInsets.only(bottom: 6, top: 6);
         return Padding(
           padding: padding,
           child: Text(
             index < 9 ? '0$index' : '$index',
-            style: index == moneyState.cents ? _active : _dimmed,
+            style: index == _moneyState.cents ? _active : _dimmed,
           ),
         );
       },
       onSelectedItemChanged: (int index) {
-        moneyState.cents = index;
+        _moneyState.cents = index;
       },
     );
   }
 }
 
-class MoneyPicker extends StatefulWidget {
+class _MoneyPicker extends StatefulWidget {
   double _total = 0.0;
   double get total => _total;
 
@@ -286,10 +296,10 @@ class MoneyPicker extends StatefulWidget {
   _MoneyPickerState createState() => _MoneyPickerState();
 }
 
-class _MoneyPickerState extends State<MoneyPicker> {
+class _MoneyPickerState extends State<_MoneyPicker> {
   @override
   Widget build(BuildContext context) {
-    final moneyStaye = Provider.of<MoneyState>(context);
+    final moneyStaye = Provider.of<_MoneyState>(context);
 
     widget._total =
         moneyStaye.grands * 1000 + moneyStaye.dollars + moneyStaye.cents / 100;

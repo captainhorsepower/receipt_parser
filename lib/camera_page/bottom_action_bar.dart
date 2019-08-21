@@ -77,29 +77,17 @@ class BottomActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: _bottomBarHeight,
-      color: Theme.of(context).primaryColor,
-      child: ChangeNotifierProvider(
-        builder: (context) => LampSwitchState(),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: _LastImageButton(_imageIconSize),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 30),
-              child: _ShutterButton(_shutterIconSize, _shutterCallback),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: _FlashlightToggle(_flashIconSize),
-            ),
-          ],
-        ),
+    return ChangeNotifierProvider(
+      builder: (context) => LampSwitchState(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
+        children: <Widget>[
+          _LastImageButton(_imageIconSize),
+          _ShutterButton(_shutterIconSize, _shutterCallback),
+          _FlashlightToggle(_flashIconSize),
+        ],
       ),
     );
   }
