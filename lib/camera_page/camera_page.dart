@@ -11,12 +11,33 @@ import 'bottom_sheet_pickers.dart';
 import 'ocr/ocr_controller.dart';
 import 'ocr/ocr_state.dart';
 
-class CameraPage extends StatefulWidget {
+class CameraPage extends StatelessWidget {
+  final appBarHeight = 40.0;
+  final title = 'Ready to scan';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(appBarHeight),
+        child: AppBar(
+          title: Text('$title'),
+        ),
+      ),
+      body: ChangeNotifierProvider(
+        builder: (context) => OcrState(),
+        child: _CameraPage(),
+      ),
+    );
+  }
+}
+
+class _CameraPage extends StatefulWidget {
   @override
   _CameraAppState createState() => _CameraAppState();
 }
 
-class _CameraAppState extends State<CameraPage> {
+class _CameraAppState extends State<_CameraPage> {
   final _ocrController = OcrController();
 
   CameraController _controller;

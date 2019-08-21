@@ -29,18 +29,7 @@ class OcrApp extends StatelessWidget {
         accentColor: Colors.white,
         canvasColor: Colors.black,
       ),
-      home: Scaffold(
-        appBar: PreferredSize(
-          preferredSize: Size.fromHeight(40),
-          child: AppBar(
-            title: Text('Ready to scan'),
-          ),
-        ),
-        body: ChangeNotifierProvider(
-          builder: (context) => OcrState(),
-          child: CameraPage(),
-        ),
-      ),
+      home: CameraPage(),
     );
   }
 }
