@@ -48,20 +48,20 @@ class _CameraAppState extends State<_CameraPage>
   AnimationController _animationController;
 
   /// bottom bar slide up
-  Animation<double> slideUp;
-  Animation<double> expand;
-  Animation<double> expandBottomBar;
+  Animation<double> slideUP;
+  Animation<double> shutterToPickerHeight;
 
   /// switch bottom bar actions to money picker
-  Animation<double> flip;
+  Animation<double> shutterToPickerFlip;
+
   Animation<double> cameraBlur;
-  Animation<double> cameraDimming;
+  Animation<double> cameraShadow;
 
   final bottomBarHeight = 80.0;
   final bottomBarHeightExpanded = 200.0;
 
   final bottomSheetHeight = 80.0;
-  final bottomSheetHeightExpanded = 300.0;
+  final moneyPickerHeight = 300.0;
 
   /// do all necessary OCR work and then return future with VisionText.
   Future<VisionText> _getOcrFuture() {
@@ -136,7 +136,7 @@ class _CameraAppState extends State<_CameraPage>
               sigmaY: cameraBlur.value,
             ),
             child: Opacity(
-              opacity: cameraDimming.value,
+              opacity: cameraShadow.value,
               child: builderChild,
             ),
           );
@@ -181,28 +181,22 @@ class _CameraAppState extends State<_CameraPage>
     // ###### INIT ANIMATIONS #######
     // ##############################
 
-    expand = Tween(begin: bottomSheetHeight, end: bottomSheetHeightExpanded)
+    slideUP = Tween(begin: bottomSheetHeight, end: moneyPickerHeight)
         .animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInCirc,
+      curve: Interval(0.0, 0.6, curve: Curves.easeInCirc),
     ));
 
-    expandBottomBar =
+    shutterToPickerHeight =
         Tween(begin: bottomBarHeight, end: bottomBarHeightExpanded)
             .animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInCirc,
+      curve: Interval(0.4, 0.6, curve: Curves.easeInCirc),
     ));
 
-    slideUp = Tween(begin: bottomBarHeight, end: bottomBarHeightExpanded)
-        .animate(CurvedAnimation(
+    shutterToPickerFlip = Tween(begin: 0.0, end: pi).animate(CurvedAnimation(
       parent: _animationController,
-      curve: Curves.easeInCirc,
-    ));
-
-    flip = Tween(begin: 0.0, end: pi).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInCirc,
+      curve: Interval(0.6, 0.9, curve: Curves.linear),
     ));
 
     cameraBlur = Tween(begin: 0.0, end: 10.0).animate(CurvedAnimation(
@@ -210,16 +204,11 @@ class _CameraAppState extends State<_CameraPage>
       curve: Curves.decelerate,
     ));
 
-    cameraDimming = Tween(begin: 0.0, end: 0.5).animate(CurvedAnimation(
+    cameraShadow = Tween(begin: 0.0, end: 0.5).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.ease,
     ));
 
-    final moneyPicker = Transform(
-      transform: Matrix4.identity()..rotateX(pi),
-      origin: Offset(0.0, bottomBarHeightExpanded / 2),
-      child: MoneyPicker(),
-    );
 
     return Stack(
       children: <Widget>[
@@ -244,13 +233,11 @@ class _CameraAppState extends State<_CameraPage>
 
           // expands bottom sheet
           child: AnimatedBuilder(
-            animation: expand,
-            builder: (context, buildChild) {
-              return Container(
-                height: expand.value,
-                child: buildChild,
-              );
-            },
+            animation: slideUP,
+            builder: (context, buildChild) => Container(
+              height: slideUP.value,
+              child: buildChild,
+            ),
 
             // bottom sheet itself
             child: Container(
@@ -263,36 +250,65 @@ class _CameraAppState extends State<_CameraPage>
                 children: <Widget>[
                   // expand bar with shutter
                   AnimatedBuilder(
-                    animation: expandBottomBar,
-                    builder: (context, buildChild) {
-                      return Container(
-                        height: expandBottomBar.value,
+                    animation: shutterToPickerHeight,
+                    builder: (context, expandBottomBarChild) => Container(
+                      height: shutterToPickerHeight.value,
+                      child: expandBottomBarChild,
+                    ),
 
-                        // flip to money picker
-                        child: AnimatedBuilder(
-                          animation: flip,
-                          builder: (context, buildChild) => Transform(
-                            transform: Matrix4.identity()..rotateX(flip.value),
-                            origin: Offset(0.0, bottomBarHeightExpanded / 2),
-                            child:
-                                flip.value < pi / 2 ? buildChild : moneyPicker,
+                    // overlayed for perfomance resons shutter and money
+                    child: Stack(
+                      children: [
+                        AnimatedBuilder(
+                          animation: shutterToPickerFlip,
+                          builder: (context, flipChild) => Transform(
+                            transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
+                            origin:
+                                Offset(0.0, bottomBarHeightExpanded / 2 - 100),
+                            child: Opacity(
+                                opacity: shutterToPickerFlip.value <= pi / 2 ? 1.0 : 0.0,
+                                child: flipChild),
                           ),
-                          child: buildChild,
+
+                          // bottom action bar
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: BottomActionBar.withShutterCallback(() {
+                              _animationController.forward();
+
+                              // get future that returns VisionText,
+                              // while it's computing I can show animations!
+                              // final foo = _getOcrFuture();
+
+                              // don't forget to update state upon completion
+                              // foo.then((visionText) {
+                              //   ocrState.visionText = visionText;
+                              // });
+                            }),
+                          ),
                         ),
-                      );
-                    },
-                    child: BottomActionBar.withShutterCallback(() {
-                      _animationController.forward();
+                        AnimatedBuilder(
+                          animation: shutterToPickerFlip,
+                          builder: (context, flipChild) => Transform(
+                            transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
+                            origin: Offset(0.0, bottomBarHeightExpanded / 2),
+                            child: Opacity(
+                                opacity: shutterToPickerFlip.value >= pi / 2 ? 1.0 : 0.0,
+                                child: flipChild),
+                          ),
 
-                      // get future that returns VisionText,
-                      // while it's computing I can show animations!
-                      // final foo = _getOcrFuture();
-
-                      // don't forget to update state upon completion
-                      // foo.then((visionText) {
-                      //   ocrState.visionText = visionText;
-                      // });
-                    }),
+                          // money picker
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Transform(
+                              transform: Matrix4.identity()..rotateX(pi),
+                              origin: Offset(0.0, bottomBarHeightExpanded / 2),
+                              child: MoneyPicker(),
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
                   ),
                 ],
               ),
