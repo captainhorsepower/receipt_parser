@@ -4,8 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:progress_indicators/progress_indicators.dart';
 import 'package:provider/provider.dart';
+import 'package:receipt_parser/main.dart';
 
-import '../main.dart';
 import 'bottom_action_bar.dart';
 import 'bottom_sheet_pickers.dart';
 import 'ocr/ocr_controller.dart';
@@ -44,6 +44,11 @@ class _CameraAppState extends State<_CameraPage> {
 
   /// do all necessary OCR work and then return future with VisionText.
   Future<VisionText> _getOcrFuture() {
+    if (!_controller.value.isInitialized) {
+      print('Camera Controller is not initialized!');
+      return null;
+    }
+
     // just a security check to prevent unwanted errors. Should never happen.
     if (_controller.value.isStreamingImages) {
       print('ImageStream has already been started, skipping...');
@@ -77,20 +82,33 @@ class _CameraAppState extends State<_CameraPage> {
     });
   }
 
+  Widget _cameraPreview() => AspectRatio(
+      aspectRatio: _controller.value.aspectRatio,
+      child: CameraPreview(_controller));
+
+  Widget _cameraError(BuildContext context) {
+    final maxHeight = MediaQuery.of(context).size.height;
+    final maxWidth = MediaQuery.of(context).size.width;
+    return Container(
+      color: Theme.of(context).disabledColor,
+      width: maxWidth,
+      height: maxHeight,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.max,
+        children: <Widget>[
+          Text("Can't open the camera", textScaleFactor: 2.0),
+          Text(r'¯\_(ツ)_/¯', textScaleFactor: 3.0),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
+    _controller = CameraController(cameras.first, ResolutionPreset.medium);
+    _controller.initialize().then((_) => mounted ? setState(() {}) : () {});
     super.initState();
-    _controller = CameraController(
-      cameras.first,
-      ResolutionPreset.medium,
-    );
-
-    _controller.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {});
-    });
   }
 
   @override
@@ -102,8 +120,6 @@ class _CameraAppState extends State<_CameraPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) return Container();
-
     final ocrState = Provider.of<OcrState>(context);
 
     final maxHeight = MediaQuery.of(context).size.height;
@@ -114,16 +130,33 @@ class _CameraAppState extends State<_CameraPage> {
         OverflowBox(
           maxHeight: maxHeight,
           maxWidth: maxWidth,
-          child: AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: CameraPreview(_controller),
+          child: _controller.value.isInitialized
+              ? _cameraPreview()
+              : _cameraError(context),
+        ),
+
+        // TODO: add opacity and blur (BackdropFilter) animations 
+        Align(
+          alignment: Alignment.center,
+          child: Opacity(
+            opacity: 0.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
           ),
         ),
+
         Align(
           alignment: Alignment.bottomCenter,
           child: BottomActionBar.withShutterCallback(() {
+            
+            // get future that returns VisionText, 
+            // while it's computing I can show animations!
             final foo = _getOcrFuture();
 
+            // don't forget to update state upon completion
             foo.then((visionText) {
               ocrState.visionText = visionText;
             });
