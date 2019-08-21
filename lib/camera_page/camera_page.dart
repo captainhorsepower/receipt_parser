@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'dart:ui';
+
 import 'package:camera/camera.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/cupertino.dart';
@@ -37,20 +40,33 @@ class _CameraPage extends StatefulWidget {
   _CameraAppState createState() => _CameraAppState();
 }
 
-class _CameraAppState extends State<_CameraPage> {
+class _CameraAppState extends State<_CameraPage>
+    with SingleTickerProviderStateMixin {
   final _ocrController = OcrController();
 
-  CameraController _controller;
+  CameraController _cameraController;
+  AnimationController _animationController;
+
+  /// bottom bar slide up
+  Animation<double> slideUp;
+
+  /// switch bottom bar actions to money picker
+  Animation<double> flip;
+  Animation<double> cameraBlur;
+  Animation<double> cameraDimming;
+
+  final bottomBarHeight = 100.0;
+  final raisedBottomBarHeight = 400.0;
 
   /// do all necessary OCR work and then return future with VisionText.
   Future<VisionText> _getOcrFuture() {
-    if (!_controller.value.isInitialized) {
+    if (!_cameraController.value.isInitialized) {
       print('Camera Controller is not initialized!');
       return null;
     }
 
     // just a security check to prevent unwanted errors. Should never happen.
-    if (_controller.value.isStreamingImages) {
+    if (_cameraController.value.isStreamingImages) {
       print('ImageStream has already been started, skipping...');
       return null;
     }
@@ -61,11 +77,13 @@ class _CameraAppState extends State<_CameraPage> {
     bool canUseImageStream = true;
     print('Starting ImageStream...');
 
-    _controller.startImageStream((CameraImage availableImage) {
+    _cameraController.startImageStream((CameraImage availableImage) {
       if (!canUseImageStream) return;
 
       canUseImageStream = false;
-      _controller.stopImageStream().then((_) => print('ImageStream stopped'));
+      _cameraController
+          .stopImageStream()
+          .then((_) => print('ImageStream stopped'));
 
       print('Got one Image.');
 
@@ -83,8 +101,8 @@ class _CameraAppState extends State<_CameraPage> {
   }
 
   Widget _cameraPreview() => AspectRatio(
-      aspectRatio: _controller.value.aspectRatio,
-      child: CameraPreview(_controller));
+      aspectRatio: _cameraController.value.aspectRatio,
+      child: CameraPreview(_cameraController));
 
   Widget _cameraError(BuildContext context) {
     final maxHeight = MediaQuery.of(context).size.height;
@@ -104,16 +122,44 @@ class _CameraAppState extends State<_CameraPage> {
     );
   }
 
+  Widget _blurShield() => AnimatedBuilder(
+            animation: cameraBlur,
+            builder: (_, builderChild) {
+              return BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: cameraBlur.value,
+                  sigmaY: cameraBlur.value,
+                ),
+                child: Opacity(
+                  opacity: cameraDimming.value,
+                  child: builderChild,
+                ),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+          );
   @override
   void initState() {
-    _controller = CameraController(cameras.first, ResolutionPreset.medium);
-    _controller.initialize().then((_) => mounted ? setState(() {}) : () {});
+    _cameraController =
+        CameraController(cameras.first, ResolutionPreset.medium);
+    _cameraController
+        .initialize()
+        .then((_) => mounted ? setState(() {}) : () {});
+
+    _animationController =
+        AnimationController(vsync: this, duration: Duration(seconds: 1));
+
     super.initState();
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _cameraController?.dispose();
+    _animationController?.dispose();
     _ocrController?.dispose();
     super.dispose();
   }
@@ -125,163 +171,74 @@ class _CameraAppState extends State<_CameraPage> {
     final maxHeight = MediaQuery.of(context).size.height;
     final maxWidth = MediaQuery.of(context).size.width;
 
+
+    // ##############################
+    // ###### INIT ANIMATIONS #######
+    // ##############################
+
+    slideUp = Tween(begin: bottomBarHeight, end: raisedBottomBarHeight)
+        .animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.bounceIn,
+    ));
+
+    flip = Tween(begin: 0.0, end: pi).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.bounceIn,
+    ));
+
+    cameraBlur = Tween(begin: 0.0, end: 10.0).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.decelerate,
+    ));
+    
+    cameraDimming = Tween(begin: 0.0, end: 0.5).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.ease,
+    ));
+
     return Stack(
       children: <Widget>[
+
+        // camera preview
         OverflowBox(
           maxHeight: maxHeight,
           maxWidth: maxWidth,
-          child: _controller.value.isInitialized
-              ? _cameraPreview()
-              : _cameraError(context),
+          child: _cameraController.value.isInitialized
+                ? _cameraPreview()
+                : _cameraError(context),
         ),
 
-        // TODO: add opacity and blur (BackdropFilter) animations 
+        // blur an opcacity for camera, 
+        // if used on cameraPreview directly holds an image
         Align(
           alignment: Alignment.center,
-          child: Opacity(
-            opacity: 0.0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-          ),
+          child: _blurShield(),
         ),
 
         Align(
           alignment: Alignment.bottomCenter,
           child: BottomActionBar.withShutterCallback(() {
-            
-            // get future that returns VisionText, 
+            _animationController.forward();
+
+            // get future that returns VisionText,
             // while it's computing I can show animations!
-            final foo = _getOcrFuture();
+            // final foo = _getOcrFuture();
 
             // don't forget to update state upon completion
-            foo.then((visionText) {
-              ocrState.visionText = visionText;
-            });
-
-            // should be always true, just attempt to prevent some silly bugs
-            if (foo != null) {
-              showModalBottomSheet(
-                context: context,
-                builder: (BuildContext context) {
-                  final _dimmedGray = Color.fromRGBO(190, 190, 190, 1.0);
-                  final cupertinoButtonsStyle =
-                      TextStyle(fontSize: 18, color: _dimmedGray);
-
-                  return Container(
-                    height: 350,
-                    child: FutureBuilder(
-                      future: foo,
-                      builder: (context, snapshot) {
-                        var picker = MoneyPicker();
-
-                        return Column(
-                          children: <Widget>[
-                            Flexible(
-                              flex: 3,
-                              child: Align(
-                                alignment: Alignment.center,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                      top: 15.0, bottom: 5),
-                                  child: Container(
-                                    height: 100,
-                                    child: snapshot.connectionState ==
-                                            ConnectionState.done
-                                        ? Text(
-                                            'Adjust receipt total:',
-                                            style: TextStyle(
-                                                fontSize: 26,
-                                                color: _dimmedGray),
-                                          )
-                                        : FadingText(
-                                            'Adjust receipt total:',
-                                            style: TextStyle(
-                                                fontSize: 26,
-                                                color: _dimmedGray),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              flex: 12,
-                              child: Container(
-                                height: 200,
-                                // child: false
-                                child: snapshot.connectionState ==
-                                        ConnectionState.done
-                                    ? ChangeNotifierProvider(
-                                        builder: (_) =>
-                                            MoneyState(snapshot.data?.text),
-                                        child: picker,
-                                      )
-                                    : JumpingDotsProgressIndicator(
-                                        fontSize: 60,
-                                        color: _dimmedGray,
-                                        numberOfDots: 7,
-                                        dotSpacing: 2.0,
-                                        milliseconds: 200,
-                                      ),
-                              ),
-                            ),
-                            Flexible(
-                              flex: 3,
-                              child: Container(
-                                height: 50,
-                                child: snapshot.connectionState ==
-                                        ConnectionState.done
-                                    ? Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: <Widget>[
-                                          CupertinoButton(
-                                            child: Text('cancel',
-                                                style: cupertinoButtonsStyle),
-                                            onPressed: () => Navigator.pop(
-                                              context,
-                                            ),
-                                          ),
-                                          CupertinoButton(
-                                            child: Text('done',
-                                                style: cupertinoButtonsStyle),
-                                            onPressed: () => Navigator.pop(
-                                              context,
-                                              picker.total,
-                                            ),
-                                          ),
-                                        ],
-                                      )
-                                    : CupertinoButton(
-                                        child: Text('cancel',
-                                            style: cupertinoButtonsStyle),
-                                        onPressed: () => Navigator.pop(
-                                          context,
-                                        ),
-                                      ),
-                              ),
-                            )
-                          ],
-                        );
-                      },
-                    ),
-                  );
-                },
-              ).then((val) {
-                if (val != null)
-                  showBottomSheet(
-                      context: context,
-                      builder: (context) {
-                        return Container();
-                      });
-              });
-            }
+            // foo.then((visionText) {
+            //   ocrState.visionText = visionText;
+            // });
           }),
         ),
+
+
+        // TODO: remove this
+        Align(
+            alignment: Alignment(-0.8, 0.95),
+            child: FloatingActionButton(
+              onPressed: () => _animationController.reverse(),
+            ))
       ],
     );
   }
