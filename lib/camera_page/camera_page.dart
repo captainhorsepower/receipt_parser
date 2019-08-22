@@ -148,6 +148,107 @@ class _CameraAppState extends State<_CameraPage>
         ),
       );
 
+  Widget _animatedBottomBar(BuildContext context) {
+    final maxWidth = MediaQuery.of(context).size.width;
+
+    return
+        // epand bottom sheet (slide up)
+        AnimatedBuilder(
+      animation: slideUP,
+      builder: (context, buildChild) => Container(
+        height: slideUP.value,
+        child: buildChild,
+      ),
+
+      // bottom sheet itself
+      child: Container(
+        width: maxWidth,
+        color: Theme.of(context).primaryColor,
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            _shutterToPickerTransition(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _shutterToPickerTransition(BuildContext context) {
+    return // height transition from shutter to picker
+        AnimatedBuilder(
+      animation: shutterToPickerHeight,
+      builder: (context, sizeTransitionChild) => Container(
+        height: shutterToPickerHeight.value,
+        child: sizeTransitionChild,
+      ),
+
+      // shutter button and picker overlayed on stack
+      child: Stack(
+        children: [
+          // flip part with shutter bar
+          AnimatedBuilder(
+            animation: shutterToPickerFlip,
+            builder: (context, flipChild) => Transform(
+              transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
+              origin: Offset(0.0, bottomBarHeightExpanded / 2 - 100),
+              child: Opacity(
+                  opacity: shutterToPickerFlip.value <= pi / 2 ? 1.0 : 0.0,
+                  child: flipChild),
+            ),
+
+            // shutter bar
+            child: Align(
+              alignment: Alignment.center,
+              child: BottomActionBar.withShutterCallback(() {
+                _animationController.forward();
+
+                // get future that returns VisionText,
+                // while it's computing I can show animations!
+                final foo = _getOcrFuture();
+
+                // // don't forget to update state upon completion
+                foo.then((visionText) {
+                  Provider.of<OcrState>(context).visionText = visionText;
+                });
+              }),
+            ),
+          ),
+
+          // flip part with picker
+          AnimatedBuilder(
+            animation: shutterToPickerFlip,
+            builder: (context, flipChild) => Transform(
+              transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
+              origin: Offset(0.0, bottomBarHeightExpanded / 2),
+              child: Opacity(
+                  opacity: shutterToPickerFlip.value >= pi / 2 ? 1.0 : 0.0,
+                  child: flipChild),
+            ),
+
+            // money picker
+            child: Align(
+              alignment: Alignment.center,
+              child: Transform(
+                transform: Matrix4.identity()..rotateX(pi),
+                origin: Offset(0.0, bottomBarHeightExpanded / 2),
+                child: _moneyPicker(context),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _moneyPicker(BuildContext context) {
+    return MoneyPicker(
+        Provider.of<OcrState>(context).visionText?.text,
+      );
+  }
+
   @override
   void initState() {
     _cameraController =
@@ -172,8 +273,6 @@ class _CameraAppState extends State<_CameraPage>
 
   @override
   Widget build(BuildContext context) {
-    final ocrState = Provider.of<OcrState>(context);
-
     final maxHeight = MediaQuery.of(context).size.height;
     final maxWidth = MediaQuery.of(context).size.width;
 
@@ -209,7 +308,6 @@ class _CameraAppState extends State<_CameraPage>
       curve: Curves.ease,
     ));
 
-
     return Stack(
       children: <Widget>[
         // camera preview
@@ -232,88 +330,7 @@ class _CameraAppState extends State<_CameraPage>
           alignment: Alignment.bottomCenter,
 
           // expands bottom sheet
-          child: AnimatedBuilder(
-            animation: slideUP,
-            builder: (context, buildChild) => Container(
-              height: slideUP.value,
-              child: buildChild,
-            ),
-
-            // bottom sheet itself
-            child: Container(
-              color: Theme.of(context).primaryColor,
-              width: maxWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  // expand bar with shutter
-                  AnimatedBuilder(
-                    animation: shutterToPickerHeight,
-                    builder: (context, expandBottomBarChild) => Container(
-                      height: shutterToPickerHeight.value,
-                      child: expandBottomBarChild,
-                    ),
-
-                    // overlayed for perfomance resons shutter and money
-                    child: Stack(
-                      children: [
-                        AnimatedBuilder(
-                          animation: shutterToPickerFlip,
-                          builder: (context, flipChild) => Transform(
-                            transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
-                            origin:
-                                Offset(0.0, bottomBarHeightExpanded / 2 - 100),
-                            child: Opacity(
-                                opacity: shutterToPickerFlip.value <= pi / 2 ? 1.0 : 0.0,
-                                child: flipChild),
-                          ),
-
-                          // bottom action bar
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: BottomActionBar.withShutterCallback(() {
-                              _animationController.forward();
-
-                              // get future that returns VisionText,
-                              // while it's computing I can show animations!
-                              // final foo = _getOcrFuture();
-
-                              // don't forget to update state upon completion
-                              // foo.then((visionText) {
-                              //   ocrState.visionText = visionText;
-                              // });
-                            }),
-                          ),
-                        ),
-                        AnimatedBuilder(
-                          animation: shutterToPickerFlip,
-                          builder: (context, flipChild) => Transform(
-                            transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
-                            origin: Offset(0.0, bottomBarHeightExpanded / 2),
-                            child: Opacity(
-                                opacity: shutterToPickerFlip.value >= pi / 2 ? 1.0 : 0.0,
-                                child: flipChild),
-                          ),
-
-                          // money picker
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: Transform(
-                              transform: Matrix4.identity()..rotateX(pi),
-                              origin: Offset(0.0, bottomBarHeightExpanded / 2),
-                              child: MoneyPicker(),
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          child: _animatedBottomBar(context),
         ),
 
         // TODO: remove this

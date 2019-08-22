@@ -7,11 +7,23 @@ Color _dimmedGray = Color.fromRGBO(190, 190, 190, 0.3);
 TextStyle _dimmed = TextStyle(color: _dimmedGray);
 TextStyle _active = TextStyle(color: Colors.white);
 
-class MoneyPicker extends StatelessWidget {
+class MoneyPicker extends StatefulWidget {
+  final String text;
+
+  MoneyPicker(this.text, {Key key}) : super(key: key);
+
+  @override
+  _MoneyPickerState createState() => _MoneyPickerState();
+}
+
+class _MoneyPickerState extends State<MoneyPicker> {
+  _MoneyState state = _MoneyState();
+
   @override
   Widget build(BuildContext context) {
+    state.pushUpdate(widget.text);
     return ChangeNotifierProvider(
-      builder: (_) => _MoneyState("100.50"),
+      builder: (_) => state,
       child: _MoneyPicker(),
     );
   }
@@ -21,13 +33,6 @@ class _MoneyState with ChangeNotifier {
   int _grands = 0;
   int _dollars = 0;
   int _cents = 0;
-
-  _MoneyState(final String text) {
-    final money = _findTotalAmountInText(text);
-    _grands = money ~/ 1000;
-    _dollars = money.floor() % 1000;
-    _cents = ((money - money.truncate()) * 100).truncate();
-  }
 
   int get grands => _grands;
   int get dollars => _dollars;
@@ -48,7 +53,22 @@ class _MoneyState with ChangeNotifier {
     notifyListeners();
   }
 
+  void pushUpdate(final String text) {
+    var money = _findTotalAmountInText(text);
+    var newGrands = money ~/ 1000;
+    var newDollars = money.floor() % 1000;
+    var newCents = ((money - money.truncate()) * 100).truncate();
+    if (grands - newGrands + dollars - newDollars + cents - newCents != 0) {
+      _grands = newGrands;
+      _dollars = newDollars;
+      _cents = newCents;
+      notifyListeners();
+    }
+  }
+
   double _findTotalAmountInText(String text) {
+    if (text == null) return 0.0;
+
     final leadingSymbols = '[1-9]\\d{0,2}';
     final separator = '(\\.|,| {1}) ?';
     final innerSymbols = '(\\d|U|D){3}';
@@ -288,21 +308,11 @@ class _CentPicker extends StatelessWidget {
   }
 }
 
-class _MoneyPicker extends StatefulWidget {
-  double _total = 0.0;
-  double get total => _total;
+class _MoneyPicker extends StatelessWidget {
 
-  @override
-  _MoneyPickerState createState() => _MoneyPickerState();
-}
-
-class _MoneyPickerState extends State<_MoneyPicker> {
   @override
   Widget build(BuildContext context) {
     final moneyStaye = Provider.of<_MoneyState>(context);
-
-    widget._total =
-        moneyStaye.grands * 1000 + moneyStaye.dollars + moneyStaye.cents / 100;
 
     return Container(
       width: 320,
