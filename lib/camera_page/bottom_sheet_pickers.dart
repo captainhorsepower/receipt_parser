@@ -19,7 +19,7 @@ class MoneyPicker extends StatefulWidget {
 }
 
 class _MoneyPickerState extends State<MoneyPicker> {
-  _MoneyState state = _MoneyState();
+  MoneyState state = MoneyState();
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class _MoneyPickerState extends State<MoneyPicker> {
   }
 }
 
-class _MoneyState with ChangeNotifier {
+class MoneyState with ChangeNotifier {
   int _grands = 0;
   int _dollars = 0;
   int _cents = 0;
@@ -149,7 +149,7 @@ class _GeneralPicker extends StatelessWidget {
     final scrollController =
         FixedExtentScrollController(initialItem: initialItem);
 
-    final money = Provider.of<_MoneyState>(context);
+    final money = Provider.of<MoneyState>(context);
     if (money.sholdAnimateTo) {
       WidgetsBinding.instance.addPostFrameCallback((duration) {
         print('postframe callback on pickers');
@@ -186,7 +186,7 @@ class _GeneralPicker extends StatelessWidget {
 class _GrandPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final money = Provider.of<_MoneyState>(context);
+    final money = Provider.of<MoneyState>(context);
 
     return _GeneralPicker(
       initialItem: money.grands,
@@ -215,7 +215,7 @@ class _GrandPicker extends StatelessWidget {
 class _ComaPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final money = Provider.of<_MoneyState>(context);
+    final money = Provider.of<MoneyState>(context);
     return _GeneralPicker(
       initialItem: 0,
       itemCount: 1,
@@ -234,7 +234,7 @@ class _ComaPicker extends StatelessWidget {
 class _DollarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final money = Provider.of<_MoneyState>(context);
+    final money = Provider.of<MoneyState>(context);
     return _GeneralPicker(
       initialItem: money.dollars,
       itemCount: 1000,
@@ -290,7 +290,7 @@ class _DotPicker extends StatelessWidget {
 class _CentPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final money = Provider.of<_MoneyState>(context);
+    final money = Provider.of<MoneyState>(context);
 
     return _GeneralPicker(
       initialItem: money.cents,
@@ -317,8 +317,6 @@ class _CentPicker extends StatelessWidget {
 class _MoneyPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final moneyStaye = Provider.of<_MoneyState>(context);
-
     return Container(
       width: 320,
       height: 180,
