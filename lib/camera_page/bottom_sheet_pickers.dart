@@ -104,17 +104,18 @@ class MoneyState with ChangeNotifier {
       return m.group(0)[0].startsWith(RegExp("(\\(|-|:)"));
     });
 
-    return matches
-        .map((match) {
-          var tmp = match.group(0).replaceAll(RegExp(r'(U|D)'), '0');
-          tmp = tmp.replaceAll(RegExp(notDigit), "");
-          tmp = tmp.substring(0, tmp.length - 2) +
-              '.' +
-              tmp.substring(tmp.length - 2);
-          return tmp;
-        })
-        .map((str) => double.parse(str))
-        .reduce((curr, next) => curr > next ? curr : next);
+    final tmp = matches.map((match) {
+      var tmp = match.group(0).replaceAll(RegExp(r'(U|D)'), '0');
+      tmp = tmp.replaceAll(RegExp(notDigit), "");
+      tmp = tmp.substring(0, tmp.length - 2) +
+          '.' +
+          tmp.substring(tmp.length - 2);
+      return tmp;
+    }).map((str) => double.parse(str));
+
+    return tmp.isEmpty
+        ? 0.0
+        : tmp.reduce((curr, next) => curr > next ? curr : next);
   }
 }
 

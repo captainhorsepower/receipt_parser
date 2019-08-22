@@ -5,6 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:receipt_parser/main.dart';
 
@@ -50,6 +51,9 @@ class _CameraAppState extends State<_CameraPage>
   Animation<double> cameraBlur;
   Animation<double> cameraShadow;
 
+  Animation<double> removeButtonsFromScreen;
+  Animation<double> buttonsFadeIn;
+
   final bottomBarHeight = 80.0;
   final bottomBarHeightExpanded = 200.0;
 
@@ -89,7 +93,7 @@ class _CameraAppState extends State<_CameraPage>
     });
 
     // return ocrFuture with delay <= maxDelayMillis
-    final maxDelayMillis = 40;
+    final maxDelayMillis = 50;
     return Future.sync(() async {
       while (foo == null) {
         await Future.delayed(Duration(milliseconds: maxDelayMillis));
@@ -136,19 +140,21 @@ class _CameraAppState extends State<_CameraPage>
         },
         child: Container(
           decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+          ),
+          // color: Theme.of(context).primaryColor,
+        ),
+      );
+
+  Widget _appBarGradient() => Opacity(
+        opacity: 0.4,
+        child: Container(
+          decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.bottomCenter,
-              end: Alignment.topCenter,
-              stops: [0.5, 0.70, 0.82, 0.89, 1.0],
-              colors: [
-                Colors.black87,
-                Colors.black54,
-                Colors.black26,
-                Colors.black12,
-                Colors.transparent
-              ],
+              begin: Alignment.topCenter,
+              end: Alignment(0.0, 0.0),
+              colors: [Colors.black, Colors.transparent],
             ),
-            // color: Theme.of(context).primaryColor,
           ),
         ),
       );
@@ -156,40 +162,43 @@ class _CameraAppState extends State<_CameraPage>
   Widget _animatedBottomBar(BuildContext context) {
     final maxWidth = MediaQuery.of(context).size.width;
 
-    return
-        // epand bottom sheet (slide up)
-        AnimatedBuilder(
-      animation: slideUP,
-      builder: (context, buildChild) => Container(
-        height: slideUP.value,
-        child: buildChild,
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.65),
+            blurRadius: 20,
+            spreadRadius: 30,
+          ),
+        ],
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(60.0),
+          topRight: Radius.circular(60.0),
+        ),
       ),
 
-      // bottom sheet itself
-      child: Container(
-        width: maxWidth,
-        decoration: BoxDecoration(
-          // gradient: LinearGradient(
-          //   begin: Alignment.bottomCenter,
-          //   end: Alignment.topCenter,
-          //   stops: [0.8, 0.90, 0.94, 0.97, 1.0],
-          //   colors: [
-          //     Colors.black,
-          //     Colors.black87,
-          //     Colors.black54,
-          //     Colors.black26,
-          //     Colors.black12,
-          //   ],
-          // ),
-          color: Theme.of(context).primaryColor,
+      // epand bottom sheet (slide up)
+      child: AnimatedBuilder(
+        animation: slideUP,
+        builder: (context, buildChild) => Container(
+          height: slideUP.value,
+          child: buildChild,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            _shutterToPickerTransition(context),
-          ],
+
+        // bottom sheet itself
+        child: Container(
+          width: maxWidth,
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              _shutterToPickerTransition(context),
+            ],
+          ),
         ),
       ),
     );
@@ -212,7 +221,7 @@ class _CameraAppState extends State<_CameraPage>
             animation: shutterToPickerFlip,
             builder: (context, flipChild) => Transform(
               transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
-              origin: Offset(0.0, bottomBarHeightExpanded / 2 - 100),
+              origin: Offset(0.0, bottomBarHeightExpanded / 2 - 103),
               child: Opacity(
                   opacity: shutterToPickerFlip.value <= pi / 2 ? 1.0 : 0.0,
                   child: flipChild),
@@ -222,8 +231,6 @@ class _CameraAppState extends State<_CameraPage>
             child: Align(
               alignment: Alignment.center,
               child: BottomActionBar.withShutterCallback(() {
-                _animationController.forward();
-
                 // get future that returns VisionText,
                 // while it's computing I can show animations!
                 final foo = _getOcrFuture();
@@ -231,6 +238,8 @@ class _CameraAppState extends State<_CameraPage>
                 // // don't forget to update state upon completion
                 foo.then((visionText) {
                   Provider.of<OcrState>(context).visionText = visionText;
+                  _animationController.forward();
+                  HapticFeedback.heavyImpact();
                 });
               }),
             ),
@@ -241,7 +250,7 @@ class _CameraAppState extends State<_CameraPage>
             animation: shutterToPickerFlip,
             builder: (context, flipChild) => Transform(
               transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
-              origin: Offset(0.0, bottomBarHeightExpanded / 2),
+              origin: Offset(0.0, bottomBarHeightExpanded / 2 - 15),
               child: Opacity(
                   opacity: shutterToPickerFlip.value >= pi / 2 ? 1.0 : 0.0,
                   child: flipChild),
@@ -256,7 +265,7 @@ class _CameraAppState extends State<_CameraPage>
                 child: _moneyPicker(context),
               ),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -267,6 +276,46 @@ class _CameraAppState extends State<_CameraPage>
       Provider.of<OcrState>(context).visionText?.text,
     );
   }
+
+  Widget _bottomBarButtons(BuildContext context) => AnimatedBuilder(
+        animation: removeButtonsFromScreen,
+        builder: (context, movingButtons) => Transform(
+          transform: Matrix4.identity()..rotateX(removeButtonsFromScreen.value),
+          origin: Offset(0.0, 100.0),
+          child: Opacity(opacity: buttonsFadeIn.value, child: movingButtons),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              // save button
+              Container(
+                width: 100,
+                child: CupertinoButton(
+                  child:
+                      Text('Save', style: Theme.of(context).textTheme.button),
+                  onPressed: () {},
+                ),
+              ),
+
+              // cancel button
+              Container(
+                width: 100,
+                child: CupertinoButton(
+                  child: Text(
+                    'Discard',
+                    style: Theme.of(context).textTheme.button,
+                  ),
+                  onPressed: () {
+                    _animationController.reverse();
+                  },
+                ),
+              )
+            ],
+          ),
+        ),
+      );
 
   @override
   void initState() {
@@ -317,15 +366,25 @@ class _CameraAppState extends State<_CameraPage>
       curve: Interval(0.6, 0.9, curve: Curves.linear),
     ));
 
-    cameraBlur = Tween(begin: 0.0, end: 10.0).animate(CurvedAnimation(
+    cameraBlur = Tween(begin: 0.0, end: 6.0).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.decelerate,
     ));
 
-    cameraShadow = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+    cameraShadow = Tween(begin: 0.0, end: 0.3).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.ease,
     ));
+
+    removeButtonsFromScreen =
+        Tween(begin: pi, end: 0.0).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Interval(0.0, 0.3, curve: Curves.linear),
+    ));
+
+    buttonsFadeIn = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
+        parent: _animationController,
+        curve: Interval(0.5, 1.0, curve: Curves.ease)));
 
     return Stack(
       children: <Widget>[
@@ -341,21 +400,7 @@ class _CameraAppState extends State<_CameraPage>
         // "AppBar" with gradient
         Align(
           alignment: Alignment.topCenter,
-          child: Opacity(
-            opacity: 0.5,
-            child: Container(
-              decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.center,
-                      colors: [
-                    Colors.black,
-                    Colors.black45,
-                    Colors.black26,
-                    Colors.transparent
-                  ])),
-            ),
-          ),
+          child: _appBarGradient(),
         ),
 
         // blur an opcacity for camera,
@@ -365,22 +410,18 @@ class _CameraAppState extends State<_CameraPage>
           child: _blurShield(),
         ),
 
+        // bar with shutter button that
+        // transfroms into pickers
         Align(
           alignment: Alignment.bottomCenter,
-
-          // expands bottom sheet
           child: _animatedBottomBar(context),
         ),
 
-        // TODO: remove this
+        // Discard and Save buttons
         Align(
-            alignment: Alignment(-0.8, 0.0),
-            child: GestureDetector(
-              onDoubleTap: () => _animationController.forward(),
-              child: FloatingActionButton(
-                onPressed: () => _animationController.reverse(),
-              ),
-            ))
+          alignment: Alignment.bottomCenter,
+          child: _bottomBarButtons(context),
+        ),
       ],
     );
   }

@@ -1,11 +1,12 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import 'package:receipt_parser/camera_page/ocr/ocr_state.dart';
 import 'package:receipt_parser/camera_page/bottom_action_bar_state.dart';
+
+import 'ocr/ocr_state.dart';
 
 class _FlashlightToggle extends StatelessWidget {
   final double _size;
@@ -18,7 +19,7 @@ class _FlashlightToggle extends StatelessWidget {
     return MaterialButton(
       child: Icon(
         state.isOn ? Icons.flash_on : Icons.flash_off,
-        color: CupertinoColors.white,
+        color: CupertinoColors.white.withOpacity(state.isOn ? 1.0 : 0.7),
         size: _size,
       ),
       onPressed: () => state.isOn = !state.isOn,
@@ -57,16 +58,48 @@ class _LastImageButton extends StatelessWidget {
       child: Icon(
         Icons.history,
         size: _size,
+        color: CupertinoColors.white.withOpacity(0.7),
       ),
-      onPressed: () {},
-      splashColor: Colors.transparent,
+      onPressed: () {
+        final text = Provider.of<OcrState>(context).visionText?.text ??
+            'Nothing recognized yet.';
+        showDialog(
+          context: context,
+          builder: (context) {
+            return GestureDetector(
+              onForcePressPeak: (forcePressDetails) {
+                HapticFeedback.vibrate();
+              },
+              onTap: () {
+                HapticFeedback.heavyImpact();
+                Navigator.of(context).pop();
+              },
+              child: Dialog(
+                insetAnimationDuration: Duration(seconds: 3),
+                elevation: 50.0,
+                backgroundColor: Colors.blue,
+                child: Container(
+                  height: 500,
+                  width: 300,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: ListView(
+                       children: <Widget>[
+                         Text('$text'),
+                       ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
 
 class BottomActionBar extends StatelessWidget {
-  final _bottomBarHeight = 80.0;
-
   final _flashIconSize = 35.0;
   final _shutterIconSize = 75.0;
   final _imageIconSize = 35.0;
