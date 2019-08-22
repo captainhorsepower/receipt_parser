@@ -5,7 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:progress_indicators/progress_indicators.dart';
+import 'package:gradient_app_bar/gradient_app_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:receipt_parser/main.dart';
 
@@ -21,12 +21,6 @@ class CameraPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(appBarHeight),
-        child: AppBar(
-          title: Text('$title'),
-        ),
-      ),
       body: ChangeNotifierProvider(
         builder: (context) => OcrState(),
         child: _CameraPage(),
@@ -143,7 +137,19 @@ class _CameraAppState extends State<_CameraPage>
         },
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor,
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              stops: [0.5, 0.70, 0.82, 0.89, 1.0],
+              colors: [
+                Colors.black87,
+                Colors.black54,
+                Colors.black26,
+                Colors.black12,
+                Colors.transparent
+              ],
+            ),
+            // color: Theme.of(context).primaryColor,
           ),
         ),
       );
@@ -163,7 +169,21 @@ class _CameraAppState extends State<_CameraPage>
       // bottom sheet itself
       child: Container(
         width: maxWidth,
-        color: Theme.of(context).primaryColor,
+        decoration: BoxDecoration(
+          // gradient: LinearGradient(
+          //   begin: Alignment.bottomCenter,
+          //   end: Alignment.topCenter,
+          //   stops: [0.8, 0.90, 0.94, 0.97, 1.0],
+          //   colors: [
+          //     Colors.black,
+          //     Colors.black87,
+          //     Colors.black54,
+          //     Colors.black26,
+          //     Colors.black12,
+          //   ],
+          // ),
+          color: Theme.of(context).primaryColor,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -245,8 +265,8 @@ class _CameraAppState extends State<_CameraPage>
 
   Widget _moneyPicker(BuildContext context) {
     return MoneyPicker(
-        Provider.of<OcrState>(context).visionText?.text,
-      );
+      Provider.of<OcrState>(context).visionText?.text,
+    );
   }
 
   @override
@@ -303,7 +323,7 @@ class _CameraAppState extends State<_CameraPage>
       curve: Curves.decelerate,
     ));
 
-    cameraShadow = Tween(begin: 0.0, end: 0.5).animate(CurvedAnimation(
+    cameraShadow = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.ease,
     ));
@@ -317,6 +337,26 @@ class _CameraAppState extends State<_CameraPage>
           child: _cameraController.value.isInitialized
               ? _cameraPreview()
               : _cameraError(context),
+        ),
+
+        // "AppBar" with gradient
+        Align(
+          alignment: Alignment.topCenter,
+          child: Opacity(
+            opacity: 0.5,
+            child: Container(
+              decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.center,
+                      colors: [
+                    Colors.black,
+                    Colors.black45,
+                    Colors.black26,
+                    Colors.transparent
+                  ])),
+            ),
+          ),
         ),
 
         // blur an opcacity for camera,
@@ -335,7 +375,7 @@ class _CameraAppState extends State<_CameraPage>
 
         // TODO: remove this
         Align(
-            alignment: Alignment(-0.8, 0.95),
+            alignment: Alignment(-0.8, 0.0),
             child: GestureDetector(
               onDoubleTap: () => _animationController.forward(),
               child: FloatingActionButton(
