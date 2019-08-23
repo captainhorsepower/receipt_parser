@@ -5,9 +5,9 @@ import 'package:camera/camera.dart';
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:receipt_parser/main.dart';
+import 'package:taptic_feedback/taptic_feedback.dart';
 
 import 'bottom_action_bar.dart';
 import 'bottom_sheet_pickers.dart';
@@ -239,7 +239,7 @@ class _CameraAppState extends State<_CameraPage>
                 foo.then((visionText) {
                   Provider.of<OcrState>(context).visionText = visionText;
                   _animationController.forward();
-                  HapticFeedback.heavyImpact();
+                  TapticFeedback.tripleLight();
                 });
               }),
             ),

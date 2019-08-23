@@ -30,6 +30,9 @@ dependencies:
   shared_preferences: ^0.5.3+4
   path_provider: ^1.2.0
 
+  taptic_feedback:
+    git:
+      url: https://github.com/captainhorsepower/ios_system_sounds_for_flutter.git
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.2
@@ -49,4 +52,3 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
-
