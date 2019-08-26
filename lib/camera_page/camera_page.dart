@@ -34,8 +34,7 @@ class _CameraPage extends StatefulWidget {
   _CameraAppState createState() => _CameraAppState();
 }
 
-class _CameraAppState extends State<_CameraPage>
-    with SingleTickerProviderStateMixin {
+class _CameraAppState extends State<_CameraPage> with SingleTickerProviderStateMixin {
   final _ocrController = OcrController();
 
   CameraController _cameraController;
@@ -83,9 +82,7 @@ class _CameraAppState extends State<_CameraPage>
       if (!canUseImageStream) return;
 
       canUseImageStream = false;
-      _cameraController
-          .stopImageStream()
-          .then((_) => print('ImageStream stopped'));
+      _cameraController.stopImageStream().then((_) => print('ImageStream stopped'));
 
       print('Got one Image.');
 
@@ -103,8 +100,7 @@ class _CameraAppState extends State<_CameraPage>
   }
 
   Widget _cameraPreview() => AspectRatio(
-      aspectRatio: _cameraController.value.aspectRatio,
-      child: CameraPreview(_cameraController));
+      aspectRatio: _cameraController.value.aspectRatio, child: CameraPreview(_cameraController));
 
   Widget _cameraError(BuildContext context) {
     final maxHeight = MediaQuery.of(context).size.height;
@@ -164,17 +160,11 @@ class _CameraAppState extends State<_CameraPage>
 
     return Container(
       decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.65),
-            blurRadius: 20,
-            spreadRadius: 30,
-          ),
-        ],
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(60.0),
-          topRight: Radius.circular(60.0),
+          topLeft: Radius.circular(20.0),
+          topRight: Radius.circular(20.0),
         ),
+        color: Theme.of(context).primaryColor.withOpacity(0.55),
       ),
 
       // epand bottom sheet (slide up)
@@ -191,13 +181,8 @@ class _CameraAppState extends State<_CameraPage>
           decoration: BoxDecoration(
             color: Colors.transparent,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              _shutterToPickerTransition(context),
-            ],
+          child: Center(
+            child: _shutterToPickerTransition(context),
           ),
         ),
       ),
@@ -223,23 +208,29 @@ class _CameraAppState extends State<_CameraPage>
               transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
               origin: Offset(0.0, bottomBarHeightExpanded / 2 - 103),
               child: Opacity(
-                  opacity: shutterToPickerFlip.value <= pi / 2 ? 1.0 : 0.0,
-                  child: flipChild),
+                  opacity: shutterToPickerFlip.value <= pi / 2 ? 1.0 : 0.0, child: flipChild),
             ),
 
             // shutter bar
             child: Align(
               alignment: Alignment.center,
               child: BottomActionBar.withShutterCallback(() {
+                final ocrState = Provider.of<OcrState>(context);
+                ocrState.isRecognitionInProgress = true;
+
                 // get future that returns VisionText,
                 // while it's computing I can show animations!
                 final foo = _getOcrFuture();
 
-                // // don't forget to update state upon completion
+                // don't forget to update state upon completion
                 foo.then((visionText) {
-                  Provider.of<OcrState>(context).visionText = visionText;
                   _animationController.forward();
-                  TapticFeedback.tripleLight();
+                  ocrState.visionText = visionText;
+
+                  ocrState.isRecognitionInProgress = false;
+                  ocrState.total == OcrState.errFlag
+                      ? TapticFeedback.tripleLight()
+                      : TapticFeedback.light();
                 });
               }),
             ),
@@ -252,8 +243,7 @@ class _CameraAppState extends State<_CameraPage>
               transform: Matrix4.identity()..rotateX(shutterToPickerFlip.value),
               origin: Offset(0.0, bottomBarHeightExpanded / 2 - 15),
               child: Opacity(
-                  opacity: shutterToPickerFlip.value >= pi / 2 ? 1.0 : 0.0,
-                  child: flipChild),
+                  opacity: shutterToPickerFlip.value >= pi / 2 ? 1.0 : 0.0, child: flipChild),
             ),
 
             // money picker
@@ -273,7 +263,7 @@ class _CameraAppState extends State<_CameraPage>
 
   Widget _moneyPicker(BuildContext context) {
     return MoneyPicker(
-      Provider.of<OcrState>(context).visionText?.text,
+      Provider.of<OcrState>(context).total,
     );
   }
 
@@ -293,8 +283,7 @@ class _CameraAppState extends State<_CameraPage>
               Container(
                 width: 100,
                 child: CupertinoButton(
-                  child:
-                      Text('Save', style: Theme.of(context).textTheme.button),
+                  child: Text('Save', style: Theme.of(context).textTheme.button),
                   onPressed: () {},
                 ),
               ),
@@ -319,14 +308,10 @@ class _CameraAppState extends State<_CameraPage>
 
   @override
   void initState() {
-    _cameraController =
-        CameraController(cameras.first, ResolutionPreset.medium);
-    _cameraController
-        .initialize()
-        .then((_) => mounted ? setState(() {}) : () {});
+    _cameraController = CameraController(cameras.first, ResolutionPreset.medium);
+    _cameraController.initialize().then((_) => mounted ? setState(() {}) : () {});
 
-    _animationController =
-        AnimationController(vsync: this, duration: Duration(seconds: 1));
+    _animationController = AnimationController(vsync: this, duration: Duration(seconds: 1));
 
     super.initState();
   }
@@ -348,15 +333,13 @@ class _CameraAppState extends State<_CameraPage>
     // ###### INIT ANIMATIONS #######
     // ##############################
 
-    slideUP = Tween(begin: bottomSheetHeight, end: moneyPickerHeight)
-        .animate(CurvedAnimation(
+    slideUP = Tween(begin: bottomSheetHeight, end: moneyPickerHeight).animate(CurvedAnimation(
       parent: _animationController,
       curve: Interval(0.0, 0.6, curve: Curves.easeInCirc),
     ));
 
     shutterToPickerHeight =
-        Tween(begin: bottomBarHeight, end: bottomBarHeightExpanded)
-            .animate(CurvedAnimation(
+        Tween(begin: bottomBarHeight, end: bottomBarHeightExpanded).animate(CurvedAnimation(
       parent: _animationController,
       curve: Interval(0.4, 0.6, curve: Curves.easeInCirc),
     ));
@@ -376,15 +359,13 @@ class _CameraAppState extends State<_CameraPage>
       curve: Curves.ease,
     ));
 
-    removeButtonsFromScreen =
-        Tween(begin: pi, end: 0.0).animate(CurvedAnimation(
+    removeButtonsFromScreen = Tween(begin: pi, end: 0.0).animate(CurvedAnimation(
       parent: _animationController,
       curve: Interval(0.0, 0.3, curve: Curves.linear),
     ));
 
     buttonsFadeIn = Tween(begin: 0.0, end: 1.0).animate(CurvedAnimation(
-        parent: _animationController,
-        curve: Interval(0.5, 1.0, curve: Curves.ease)));
+        parent: _animationController, curve: Interval(0.5, 1.0, curve: Curves.ease)));
 
     return Stack(
       children: <Widget>[
@@ -392,9 +373,7 @@ class _CameraAppState extends State<_CameraPage>
         OverflowBox(
           maxHeight: maxHeight,
           maxWidth: maxWidth,
-          child: _cameraController.value.isInitialized
-              ? _cameraPreview()
-              : _cameraError(context),
+          child: _cameraController.value.isInitialized ? _cameraPreview() : _cameraError(context),
         ),
 
         // "AppBar" with gradient

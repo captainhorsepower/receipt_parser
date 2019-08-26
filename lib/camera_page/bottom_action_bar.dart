@@ -35,12 +35,17 @@ class _ShutterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ocrState = Provider.of<OcrState>(context);
+    final isInProgress = ocrState.isRecognitionInProgress;
+
     return MaterialButton(
-      child: Icon(
-        CupertinoIcons.circle_filled,
-        size: _size,
-        color: CupertinoColors.white,
-      ),
+      child: isInProgress
+          ? CircularProgressIndicator()
+          : Icon(
+              CupertinoIcons.circle_filled,
+              size: _size,
+              color: CupertinoColors.white,
+            ),
       onPressed: _callback,
       splashColor: Colors.transparent,
     );
@@ -61,8 +66,7 @@ class _LastImageButton extends StatelessWidget {
         color: CupertinoColors.white.withOpacity(0.7),
       ),
       onPressed: () {
-        final text = Provider.of<OcrState>(context).visionText?.text ??
-            'Nothing recognized yet.';
+        final text = Provider.of<OcrState>(context).visionText?.text ?? 'Nothing recognized yet.';
         showDialog(
           context: context,
           builder: (context) {
@@ -84,9 +88,9 @@ class _LastImageButton extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: ListView(
-                       children: <Widget>[
-                         Text('$text'),
-                       ],
+                      children: <Widget>[
+                        Text('$text'),
+                      ],
                     ),
                   ),
                 ),

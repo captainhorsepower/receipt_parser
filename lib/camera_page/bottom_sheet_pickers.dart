@@ -10,9 +10,9 @@ TextStyle _dimmed = TextStyle(color: _dimmedGray);
 TextStyle _active = TextStyle(color: Colors.white);
 
 class MoneyPicker extends StatefulWidget {
-  final String text;
+  final double inputTotal;
 
-  MoneyPicker(this.text, {Key key}) : super(key: key);
+  MoneyPicker(this.inputTotal, {Key key}) : super(key: key);
 
   @override
   _MoneyPickerState createState() => _MoneyPickerState();
@@ -23,7 +23,7 @@ class _MoneyPickerState extends State<MoneyPicker> {
 
   @override
   Widget build(BuildContext context) {
-    state.pushUpdate(widget.text);
+    state.pushUpdate(widget.inputTotal);
     state.requireAnimateTo();
     return ChangeNotifierProvider(
       builder: (_) => state,
@@ -69,8 +69,7 @@ class MoneyState with ChangeNotifier {
     notifyListeners();
   }
 
-  void pushUpdate(final String text) {
-    var money = _findTotalAmountInText(text);
+  void pushUpdate(final double money) {
     var newGrands = money ~/ 1000;
     var newDollars = money.floor() % 1000;
     var newCents = ((money - money.truncate()) * 100).truncate();
@@ -80,42 +79,6 @@ class MoneyState with ChangeNotifier {
       _cents = newCents;
       notifyListeners();
     }
-  }
-
-  double _findTotalAmountInText(String text) {
-    if (text == null) return 0.0;
-
-    final leadingSymbols = '[1-9]\\d{0,2}';
-    final separator = '(\\.|,| {1}) ?';
-    final innerSymbols = '(\\d|U|D){3}';
-    final cents = '(\\d|U|D){2}';
-    final notDigit = '[^\\d]';
-
-    RegExp exp = RegExp(
-        "(^|$notDigit)$leadingSymbols($separator$innerSymbols){0,2}$separator$cents(\$|$notDigit)");
-
-    List<RegExpMatch> matches = exp.allMatches(text).toList();
-
-    if (matches.isEmpty) {
-      return 0.0;
-    }
-
-    matches.removeWhere((m) {
-      return m.group(0)[0].startsWith(RegExp("(\\(|-|:)"));
-    });
-
-    final tmp = matches.map((match) {
-      var tmp = match.group(0).replaceAll(RegExp(r'(U|D)'), '0');
-      tmp = tmp.replaceAll(RegExp(notDigit), "");
-      tmp = tmp.substring(0, tmp.length - 2) +
-          '.' +
-          tmp.substring(tmp.length - 2);
-      return tmp;
-    }).map((str) => double.parse(str));
-
-    return tmp.isEmpty
-        ? 0.0
-        : tmp.reduce((curr, next) => curr > next ? curr : next);
   }
 }
 
@@ -139,16 +102,15 @@ class _GeneralPicker extends StatelessWidget {
       this.backgroundColor: Colors.transparent,
       this.looping: true,
       this.itemExtent: 60,
-      this.useMagnifier: true,
-      this.magnification: 1.15}) {
+      this.useMagnifier: false,
+      this.magnification: 1.00}) {
     assert(itemCount != null);
     assert(itemBuilder != null);
   }
 
   @override
   Widget build(BuildContext context) {
-    final scrollController =
-        FixedExtentScrollController(initialItem: initialItem);
+    final scrollController = FixedExtentScrollController(initialItem: initialItem);
 
     final money = Provider.of<MoneyState>(context);
     if (money.sholdAnimateTo) {
